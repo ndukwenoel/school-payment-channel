@@ -1,0 +1,19 @@
+# Misc
+*.log
+*.db
+.env
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
