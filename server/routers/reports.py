@@ -10,19 +10,18 @@ router = APIRouter(
 )
 
 @router.get("/summary", response_model=schemas.DashboardStats)
-def get_dashboard_summary(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "school_admin"]:
-         raise HTTPException(status_code=403, detail="Not authorized")
+def get_dashboard_summary(
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin"]))
+):
+    if not current_user.school_id:
+         raise HTTPException(status_code=400, detail="User not assigned to a school")
 
-    # Filter by user's school if applicable
-    student_query = db.query(models.Student)
-    if current_user.school_id:
-        student_query = student_query.filter(models.Student.school_id == current_user.school_id)
-    
+    # Filter by user's school strictly
+    student_query = db.query(models.Student).filter(models.Student.school_id == current_user.school_id)
     total_students = student_query.count()
 
-    # Fee logic needs to filter by fees belonging to students in this school
-    # Complex query: Join Fee -> Student -> School
+    # Issue 13: Data Leakage Prevention
     fee_query = db.query(models.Fee).join(models.Student).filter(models.Student.school_id == current_user.school_id)
     
     total_fees_created = 0.0
@@ -47,10 +46,12 @@ def get_dashboard_summary(db: Session = Depends(get_db), current_user: models.Us
         if balance > 0:
             outstanding_fees += balance
 
-    # Total Revenue (Payments made)
-    # Join Payment -> Fee -> Student
-    payment_query = db.query(models.Payment).join(models.Fee).join(models.Student).filter(models.Student.school_id == current_user.school_id)
-    total_revenue = db.query(func.sum(models.Payment.amount_paid)).join(models.Fee).join(models.Student).filter(models.Student.school_id == current_user.school_id).scalar() or 0.0
+    # Total Revenue (sum of all payments for school's students)
+    total_revenue = db.query(func.sum(models.Payment.amount_paid))\
+        .join(models.Fee)\
+        .join(models.Student)\
+        .filter(models.Student.school_id == current_user.school_id)\
+        .scalar() or 0.0
 
     return {
         "total_students": total_students,

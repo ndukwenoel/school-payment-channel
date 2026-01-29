@@ -15,6 +15,7 @@ class _FeesListPageState extends State<FeesListPage> {
   bool _loading = true;
   List<Student> _students = [];
   Map<int, List<Fee>> _fees = {};
+  final Set<int> _processingFees = {}; // Issue 20: Double-submit protection
 
   @override
   void initState() {
@@ -49,36 +50,53 @@ class _FeesListPageState extends State<FeesListPage> {
   }
 
   Future<void> _payFee(Fee fee) async {
-    // 1. Create Intent
+    if (_processingFees.contains(fee.id)) return;
+    
+    setState(() => _processingFees.add(fee.id));
+
     try {
       final repo = context.read<PaymentRepository>();
-      // Mocking Amount: Pay full remaining? Or fixed? 
-      // For MVP pay full amount.
       await repo.createPaymentIntent(fee.id, fee.amount);
       
-      // 2. Mock Gateway UI
+      if (!mounted) return;
+
       bool? confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text("Confirm Payment"),
           content: Text("Pay \$${fee.amount} using Mock Card?"),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
-            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text("Pay Now")),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false), 
+              child: const Text("Cancel")
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true), 
+              child: const Text("Pay Now")
+            ),
           ],
         )
       );
 
       if (confirm == true) {
-        // 3. Confirm Payment
         await repo.confirmPayment(fee.id, fee.amount, "card");
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Successful!")));
-           _loadData(); // Refresh
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text("Payment Successful!"))
+           );
+           _loadData(); 
         }
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Payment Failed: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Payment Failed: $e"))
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _processingFees.remove(fee.id));
+      }
     }
   }
 
@@ -109,11 +127,19 @@ class _FeesListPageState extends State<FeesListPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text("\$${fee.amount}  ", style: const TextStyle(fontWeight: FontWeight.bold)),
-                          fee.status == 'paid' 
+                            fee.status == 'paid' 
                             ? const Icon(Icons.check_circle, color: Colors.green)
                             : ElevatedButton(
-                                onPressed: () => _payFee(fee),
-                                child: const Text("Pay"),
+                                onPressed: _processingFees.contains(fee.id) 
+                                  ? null 
+                                  : () => _payFee(fee),
+                                child: _processingFees.contains(fee.id)
+                                  ? const SizedBox(
+                                      width: 20, 
+                                      height: 20, 
+                                      child: CircularProgressIndicator(strokeWidth: 2)
+                                    )
+                                  : const Text("Pay"),
                               )
                         ],
                       ),

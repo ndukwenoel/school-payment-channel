@@ -41,9 +41,11 @@ async def create_default_school():
     db.close()
 
 @router.post("/", response_model=schemas.School)
-def create_school(school: schemas.SchoolCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    # Simple check: only allow if user is super admin (hypothetically) or role check
-    # For now allowing any auth user to create for demo
+def create_school(
+    school: schemas.SchoolCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(CheckRole(["admin"])) # Only super admins
+):
     db_school = db.query(models.School).filter(models.School.name == school.name).first()
     if db_school:
         raise HTTPException(status_code=400, detail="School already registered")
@@ -56,12 +58,6 @@ def create_school(school: schemas.SchoolCreate, db: Session = Depends(get_db), c
 @router.get("/me", response_model=schemas.School)
 def read_my_school(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     if current_user.school_id is None:
-        # Fallback for demo: if user has no school, assign to first school
-        first_school = db.query(models.School).first()
-        if first_school:
-             current_user.school_id = first_school.id
-             db.commit()
-             return first_school
         raise HTTPException(status_code=404, detail="User not assigned to any school")
     
     school = db.query(models.School).filter(models.School.id == current_user.school_id).first()

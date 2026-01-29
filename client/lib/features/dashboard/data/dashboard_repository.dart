@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/api_client.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-part 'dashboard_models.g.dart';
+part 'dashboard_repository.g.dart';
 
 @JsonSerializable()
 class School {
@@ -96,8 +96,6 @@ class DashboardRepository {
         'grade': grade,
         'discount_id': null
       });
-    } catch (e) {
-      throw e;
     } catch (e) {
       throw e;
     }

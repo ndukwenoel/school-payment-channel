@@ -56,23 +56,33 @@ class _RegisterPageState extends State<RegisterPage> {
                   validator: (value) => value!.isEmpty ? 'Enter password' : null,
                 ),
                 const SizedBox(height: 24),
-                 BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, state) {
-                    if (state is AuthLoading) return const CircularProgressIndicator();
-                    return ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          context.read<AuthBloc>().add(AuthRegister(
-                            _emailController.text,
-                            _passwordController.text,
-                            _nameController.text,
-                            'parent', // Default role for now
-                          ));
-                        }
-                      },
-                      child: const Text('Register'),
-                    );
-                  },
+                SizedBox(
+                  width: double.infinity,
+                  child: BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, state) {
+                      return ElevatedButton(
+                        onPressed: state is AuthLoading 
+                          ? null 
+                          : () {
+                              if (_formKey.currentState!.validate()) {
+                                context.read<AuthBloc>().add(AuthRegister(
+                                  _emailController.text,
+                                  _passwordController.text,
+                                  _nameController.text,
+                                  'parent',
+                                ));
+                              }
+                            },
+                        child: state is AuthLoading 
+                          ? const SizedBox(
+                              width: 20, 
+                              height: 20, 
+                              child: CircularProgressIndicator(strokeWidth: 2)
+                            )
+                          : const Text('Register'),
+                      );
+                    },
+                  ),
                 ),
               ],
             ),

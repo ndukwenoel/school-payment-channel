@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'core/api_client.dart';
+import 'core/theme.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/dashboard/data/dashboard_repository.dart';
 import 'features/payments/data/payment_repository.dart';
@@ -51,10 +52,6 @@ class AppView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine initial route based on auth state? 
-    // Actually GoRouter redirect is better but for MVP simple conditional or initial route logic.
-    // Let's use a simple router definition.
-    
     final router = GoRouter(
       initialLocation: '/',
       routes: [
@@ -94,55 +91,6 @@ class AppView extends StatelessWidget {
       redirect: (context, state) {
         // Redirection logic can be added here to protect /dashboard
         // For now relying on Login page navigation
-        return null;
-      },
-    );
-
-
-
-class AppView extends StatelessWidget {
-  const AppView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final router = GoRouter(
-      // ... routes as is ...
-      initialLocation: '/',
-      routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, state) => const LoginPage(),
-        ),
-        GoRoute(
-          path: '/register',
-          builder: (context, state) => const RegisterPage(),
-        ),
-        GoRoute(
-          path: '/dashboard',
-          builder: (context, state) => const DashboardPage(),
-        ),
-        GoRoute(
-          path: '/create-fee',
-          builder: (context, state) => const CreateFeePage(),
-        ),
-        GoRoute(
-          path: '/link-student',
-          builder: (context, state) => const LinkStudentPage(),
-        ),
-        GoRoute(
-          path: '/notifications',
-          builder: (context, state) => const NotificationHistoryPage(),
-        ),
-        GoRoute(
-          path: '/fees',
-          builder: (context, state) => const FeesListPage(),
-        ),
-        GoRoute(
-          path: '/history',
-          builder: (context, state) => const PaymentHistoryPage(),
-        ),
-      ],
-      redirect: (context, state) {
         return null;
       },
     );

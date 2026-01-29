@@ -1,6 +1,6 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from .database import Base
 
 class User(Base):
@@ -65,7 +65,7 @@ class Payment(Base):
     fee_id = Column(Integer, ForeignKey("fees.id"))
     amount_paid = Column(Float)
     transaction_id = Column(String)
-    payment_date = Column(DateTime, default=datetime.utcnow)
+    payment_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     payment_method = Column(String) # card, bank_transfer
 
     fee = relationship("Fee", back_populates="payments")
@@ -88,7 +88,7 @@ class NotificationLog(Base):
     recipient_email = Column(String)
     subject = Column(String)
     message = Column(String)
-    sent_at = Column(DateTime, default=datetime.utcnow)
+    sent_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     status = Column(String, default="sent") # sent, failed
 
 # Re-defining Fee to include discount relationship

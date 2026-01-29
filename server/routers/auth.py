@@ -64,7 +64,23 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
+    
     user = db.query(models.User).filter(models.User.email == email).first()
     if user is None:
         raise credentials_exception
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="User account is deactivated")
+    
     return user
+
+class CheckRole:
+    def __init__(self, allowed_roles: list[str]):
+        self.allowed_roles = allowed_roles
+
+    def __call__(self, current_user: models.User = Depends(get_current_user)):
+        if current_user.role not in self.allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Role '{current_user.role}' is not authorized to access this resource"
+            )
+        return current_user
