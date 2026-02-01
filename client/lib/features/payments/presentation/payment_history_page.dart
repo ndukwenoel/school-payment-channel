@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../data/payment_repository.dart';
 import '../data/payment_models.dart';
+import '../../../core/theme.dart';
 
 class PaymentHistoryPage extends StatelessWidget {
   const PaymentHistoryPage({super.key});
@@ -9,7 +10,8 @@ class PaymentHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Payment History")),
+      backgroundColor: AppTheme.voidBlack,
+      appBar: AppBar(title: const Text("PAYMENT HISTORY")),
       body: FutureBuilder<List<Payment>>(
         future: context.read<PaymentRepository>().getPaymentHistory(),
         builder: (context, snapshot) {
@@ -17,20 +19,45 @@ class PaymentHistoryPage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-             return Center(child: Text("Error: ${snapshot.error}"));
+             return Center(child: Text("Error: ${snapshot.error}", style: const TextStyle(color: Colors.redAccent)));
           }
           final payments = snapshot.data ?? [];
-          if (payments.isEmpty) return const Center(child: Text("No payments found."));
+          if (payments.isEmpty) {
+            return const Center(
+              child: Text("No transaction records found.", style: TextStyle(color: Colors.white38)),
+            );
+          }
 
           return ListView.builder(
+            padding: const EdgeInsets.all(16),
             itemCount: payments.length,
             itemBuilder: (context, index) {
               final p = payments[index];
-              return ListTile(
-                leading: const Icon(Icons.receipt),
-                title: Text("TXN: ${p.transactionId}"),
-                subtitle: Text(p.paymentDate.toString()),
-                trailing: Text("\$${p.amountPaid}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: AppTheme.blueVibrant.withOpacity(0.1), shape: BoxShape.circle),
+                    child: const Icon(Icons.receipt_long, color: AppTheme.blueVibrant, size: 20),
+                  ),
+                  title: Text(
+                    "TXN-${p.transactionId.toUpperCase()}",
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1),
+                  ),
+                  subtitle: Text(
+                    "${p.paymentDate.day}/${p.paymentDate.month}/${p.paymentDate.year}",
+                    style: const TextStyle(color: Colors.white38, fontSize: 12),
+                  ),
+                  trailing: Text(
+                    "\$${p.amountPaid.toStringAsFixed(2)}",
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.limeLight, fontSize: 16),
+                  ),
+                ),
               );
             },
           );

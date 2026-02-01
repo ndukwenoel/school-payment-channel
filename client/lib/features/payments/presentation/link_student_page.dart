@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../data/payment_repository.dart';
+import '../../../core/theme.dart';
 
 class LinkStudentPage extends StatefulWidget {
   const LinkStudentPage({super.key});
@@ -34,21 +35,32 @@ class _LinkStudentPageState extends State<LinkStudentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Link Student")),
+      backgroundColor: AppTheme.voidBlack,
+      appBar: AppBar(title: const Text("LINK STUDENT")),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Enter your child's enrollment number to link them to your account."),
-            const SizedBox(height: 16),
+            const Text(
+              "Please enter the enrollment number assigned by the school to link your account.",
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 32),
             TextField(
               controller: _enrollmentController,
-              decoration: const InputDecoration(labelText: "Enrollment Number", border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: "Enrollment Number",
+                prefixIcon: Icon(Icons.badge_outlined),
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 40),
             _loading 
-              ? const CircularProgressIndicator()
-              : ElevatedButton(onPressed: _linkStudent, child: const Text("Link Student"))
+              ? const Center(child: CircularProgressIndicator())
+              : ElevatedButton(
+                  onPressed: _linkStudent,
+                  child: const Text("INITIALIZE LINKING"),
+                )
           ],
         ),
       ),

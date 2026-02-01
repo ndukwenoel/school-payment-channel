@@ -150,3 +150,183 @@ class DashboardStats(BaseModel):
     total_revenue: float
     outstanding_fees: float
     total_fees_created: float
+
+# --- ERP Schemas ---
+
+class ClassRoomBase(BaseModel):
+    name: str
+    section: Optional[str] = None
+    school_id: int
+
+class ClassRoomCreate(ClassRoomBase):
+    pass
+
+class ClassRoom(ClassRoomBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+class SubjectBase(BaseModel):
+    name: str
+    code: str
+    school_id: int
+
+class SubjectCreate(SubjectBase):
+    pass
+
+class Subject(SubjectBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+class AttendanceBase(BaseModel):
+    date: datetime
+    status: str
+    student_id: int
+    school_id: int
+
+class AttendanceCreate(AttendanceBase):
+    pass
+
+class Attendance(AttendanceBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+class GradeRecordBase(BaseModel):
+    score: float
+    term: str
+    academic_year: str
+    student_id: int
+    subject_id: int
+    school_id: int
+
+class GradeRecordCreate(GradeRecordBase):
+    pass
+
+class GradeRecord(GradeRecordBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+class StaffProfileBase(BaseModel):
+    employee_id: str
+    designation: str
+    base_salary: float = 0.0
+    user_id: int
+    school_id: int
+
+class StaffProfileCreate(StaffProfileBase):
+    pass
+
+class StaffProfile(StaffProfileBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+class PayrollBase(BaseModel):
+    month: str
+    year: int
+    base_salary: float
+    bonuses: float = 0.0
+    deductions: float = 0.0
+    net_pay: float
+    staff_id: int
+    school_id: int
+
+class PayrollCreate(PayrollBase):
+    pass
+
+class Payroll(PayrollBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+class InventoryItemBase(BaseModel):
+    name: str
+    category: str
+    quantity: int = 0
+    unit_price: Optional[float] = None
+    school_id: int
+
+class InventoryItemCreate(InventoryItemBase):
+    pass
+
+class InventoryItem(InventoryItemBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+# --- Collaboration Schemas ---
+
+class BroadcastBase(BaseModel):
+    title: str
+    message: str
+    type: str = "newsletter"
+    school_id: int
+
+class BroadcastCreate(BroadcastBase):
+    pass
+
+class Broadcast(BroadcastBase):
+    id: int
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class AcademicResourceBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    file_url: str
+    type: str # note, exam, test
+    visibility: str = "internal" # internal (default), public
+    school_id: int
+    classroom_id: Optional[int] = None
+
+class AcademicResourceCreate(AcademicResourceBase):
+    pass
+
+class AcademicResource(AcademicResourceBase):
+    id: int
+    status: str
+    created_at: datetime
+    teacher_id: int
+    class Config:
+        from_attributes = True
+
+# --- Collaboration Schemas ---
+
+class BroadcastBase(BaseModel):
+    title: str
+    message: str
+    type: str = "newsletter"
+    school_id: int
+
+class BroadcastCreate(BroadcastBase):
+    pass
+
+class Broadcast(BroadcastBase):
+    id: int
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class AcademicResourceBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    file_url: str
+    type: str # note, exam, test
+    visibility: str = "internal" # internal (default), public
+    school_id: int
+    classroom_id: Optional[int] = None
+
+class AcademicResourceCreate(AcademicResourceBase):
+    pass
+
+class AcademicResource(AcademicResourceBase):
+    id: int
+    status: str
+    created_at: datetime
+    teacher_id: int
+    class Config:
+        from_attributes = True

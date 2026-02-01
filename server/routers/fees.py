@@ -75,10 +75,21 @@ def create_bulk_fees(
             status="pending"
         )
         db.add(new_fee)
+        
+        # Log notification
+        if student.parent:
+            log = models.NotificationLog(
+                recipient_email=student.parent.email,
+                subject=f"New Fee Assigned: {fee_data.title}",
+                message=f"A new fee of {fee_data.amount} has been assigned to {student.full_name} due by {fee_data.due_date.strftime('%Y-%m-%d')}.",
+                status="sent"
+            )
+            db.add(log)
+            
         count += 1
     
     db.commit()
-    return {"message": "Fees assigned successfully", "count": count}
+    return {"message": "Fees pushed successfully to parents", "count": count}
 
 @router.get("/student/{student_id}", response_model=List[schemas.Fee])
 def get_student_fees(

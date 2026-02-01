@@ -4,11 +4,12 @@ from fastapi.staticfiles import StaticFiles
 from . import models, database
 
 from .routers import auth, fees, schools, students, parents, payments, notifications, reports
+from .routers import erp_academic, erp_hr, erp_inventory, erp_collaboration
 
 # Create tables
 models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="School Payment Channel")
+app = FastAPI(title="Channel")
 
 app.include_router(auth.router)
 app.include_router(schools.router)
@@ -18,6 +19,10 @@ app.include_router(parents.router)
 app.include_router(payments.router)
 app.include_router(notifications.router)
 app.include_router(reports.router)
+app.include_router(erp_academic.router)
+app.include_router(erp_hr.router)
+app.include_router(erp_inventory.router)
+app.include_router(erp_collaboration.router)
 
 from fastapi.responses import RedirectResponse
 
@@ -37,7 +42,7 @@ app.add_middleware(
 # API Routes Placeholder
 @app.get("/api/health")
 def read_root():
-    return {"status": "ok", "message": "School Payment Channel API is running"}
+    return {"status": "ok", "message": "Channel API is running"}
 
 # Serve Frontend (Client)
 # Ensure the client directory exists one level up or adjust path

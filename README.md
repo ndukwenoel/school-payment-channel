@@ -1,4 +1,4 @@
-# School Payment System
+# Channel
 
 ## Project Structure
 - `client/`: Flutter Application (Web, Android, iOS)

@@ -12,10 +12,19 @@ import 'features/auth/presentation/register_page.dart';
 import 'features/dashboard/dashboard_page.dart';
 import 'features/payments/presentation/link_student_page.dart';
 import 'features/payments/presentation/fees_list_page.dart';
-import 'features/payments/presentation/payment_history_page.dart';
-import 'features/dashboard/presentation/create_fee_page.dart';
-import 'features/notifications/data/notification_repository.dart';
+import 'features/payments/presentation/fee_detail_page.dart';
+import 'features/payments/presentation/payment_method_page.dart';
+import 'features/payments/presentation/payment_success_page.dart';
+import 'features/payments/data/payment_models.dart';
 import 'features/notifications/presentation/notification_history_page.dart';
+import 'features/erp/data/erp_repository.dart';
+import 'features/erp/presentation/academic_dashboard_page.dart';
+import 'features/erp/presentation/office_dashboard_page.dart';
+import 'features/erp/presentation/fee_management_page.dart';
+import 'features/erp/presentation/payroll_page.dart';
+import 'features/erp/presentation/results_page.dart';
+import 'features/erp/presentation/broadcast_page.dart';
+import 'features/erp/presentation/resource_pages.dart';
 
 void main() {
   runApp(const MyApp());
@@ -38,6 +47,7 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (context) => dashboardRepository),
         RepositoryProvider(create: (context) => paymentRepository),
         RepositoryProvider(create: (context) => notificationRepository),
+        RepositoryProvider(create: (context) => ErpRepository(apiClient)),
       ],
       child: BlocProvider(
         create: (context) => AuthBloc(authRepository)..add(AuthCheckStatus()),
@@ -84,8 +94,61 @@ class AppView extends StatelessWidget {
           builder: (context, state) => const FeesListPage(),
         ),
         GoRoute(
+          path: '/fee-detail',
+          builder: (context, state) {
+            final fee = state.extra as Fee;
+            return FeeDetailPage(fee: fee);
+          },
+        ),
+        GoRoute(
+          path: '/payment-method',
+          builder: (context, state) {
+            final fee = state.extra as Fee;
+            return PaymentMethodPage(fee: fee);
+          },
+        ),
+        GoRoute(
+          path: '/payment-success',
+          builder: (context, state) {
+            final fee = state.extra as Fee;
+            return PaymentSuccessPage(fee: fee);
+          },
+        ),
+        GoRoute(
           path: '/history',
           builder: (context, state) => const PaymentHistoryPage(),
+        ),
+        GoRoute(
+          path: '/erp/academic',
+          builder: (context, state) => const AcademicDashboardPage(),
+        ),
+        GoRoute(
+          path: '/erp/office',
+          builder: (context, state) => const OfficeDashboardPage(),
+        ),
+        GoRoute(
+          path: '/erp/fees',
+          builder: (context, state) => const FeeManagementPage(),
+        ),
+        GoRoute(
+          path: '/erp/payroll',
+          builder: (context, state) => const PayrollPage(),
+        ),
+        GoRoute(
+          path: '/erp/results',
+          builder: (context, state) => const ResultsPage(),
+        ),
+        GoRoute(
+          path: '/erp/broadcasts',
+          builder: (context, state) => const BroadcastPage(),
+        ),
+        GoRoute(
+          path: '/erp/upload',
+          builder: (context, state) => const ResourceUploadPage(),
+        ),
+        GoRoute(
+          path: '/erp/review',
+          builder: (context, state) => const ResourceReviewPage(),
         ),
       ],
       redirect: (context, state) {
@@ -96,8 +159,8 @@ class AppView extends StatelessWidget {
     );
 
     return MaterialApp.router(
-      title: 'School Payment',
-      theme: AppTheme.lightTheme,
+      title: 'Channel',
+      theme: AppTheme.darkTheme,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

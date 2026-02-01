@@ -36,19 +36,18 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                   const Icon(Icons.school, size: 80, color: Color(0xFF1E3A8A)),
+                   const Icon(Icons.blur_on, size: 80, color: Color(0xFF4354FF)),
                    const SizedBox(height: 20),
-                   Text("School Payment", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: const Color(0xFF1E3A8A), fontWeight: FontWeight.bold)),
-                   const SizedBox(height: 40),
+                   Text("CHANNEL", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                   const Text("PORTAL ACCESS", style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 4)),
+                   const SizedBox(height: 48),
                    Container(
                      constraints: const BoxConstraints(maxWidth: 400),
                      padding: const EdgeInsets.all(24),
                      decoration: BoxDecoration(
-                       color: Colors.white,
-                       borderRadius: BorderRadius.circular(20),
-                       boxShadow: [
-                         BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))
-                       ]
+                       color: const Color(0xFF111111),
+                       borderRadius: BorderRadius.circular(12),
+                       border: Border.all(color: Colors.white.withOpacity(0.05))
                      ),
                      child: Column(
                        children: [

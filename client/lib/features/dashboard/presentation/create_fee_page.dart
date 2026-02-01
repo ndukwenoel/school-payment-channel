@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../data/dashboard_repository.dart';
 import '../data/dashboard_models.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme.dart';
 
 class CreateFeePage extends StatefulWidget {
   const CreateFeePage({super.key});
@@ -80,89 +81,105 @@ class _CreateFeePageState extends State<CreateFeePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Extract unique grades
     final grades = _students.map((s) => s.grade).toSet().toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Create Fee")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      backgroundColor: AppTheme.voidBlack,
+      appBar: AppBar(title: const Text("CREATE NEW FEE")),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<bool>(
-                      title: const Text("Single Student"),
+              const Text("TARGET AUDIENCE", style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1)),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(color: AppTheme.surfaceLight, borderRadius: BorderRadius.circular(8)),
+                child: Column(
+                  children: [
+                    RadioListTile<bool>(
+                      title: const Text("Single Student", style: TextStyle(fontSize: 14)),
                       value: false,
                       groupValue: _isBulk,
+                      activeColor: AppTheme.blueVibrant,
                       onChanged: (val) => setState(() => _isBulk = val!),
                     ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<bool>(
-                      title: const Text("Whole Class"),
+                    RadioListTile<bool>(
+                      title: const Text("Whole Class", style: TextStyle(fontSize: 14)),
                       value: true,
                       groupValue: _isBulk,
+                      activeColor: AppTheme.blueVibrant,
                       onChanged: (val) => setState(() => _isBulk = val!),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               if (!_isBulk)
                 DropdownButtonFormField<int>(
                   value: _selectedStudentId,
+                  dropdownColor: AppTheme.surfaceLight,
                   items: _students.map((s) => DropdownMenuItem(value: s.id, child: Text("${s.fullName} (${s.enrollmentNumber})"))).toList(),
                   onChanged: (val) => setState(() => _selectedStudentId = val),
-                  decoration: const InputDecoration(labelText: "Student", border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: "Select Student"),
                   validator: (val) => val == null && !_isBulk ? 'Select a student' : null,
                 )
               else
                  DropdownButtonFormField<String>(
                   value: _selectedGrade,
+                  dropdownColor: AppTheme.surfaceLight,
                   items: grades.map((g) => DropdownMenuItem(value: g, child: Text("Grade $g"))).toList(),
                   onChanged: (val) => setState(() => _selectedGrade = val),
-                  decoration: const InputDecoration(labelText: "Select Class/Grade", border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: "Select Class/Grade"),
                   validator: (val) => (val == null || val.isEmpty) && _isBulk ? 'Select a grade' : null,
                 ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(labelText: "Fee Title (e.g. Tuition Term 1)", border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: "Fee Title (e.g. Tuition Term 1)"),
                 validator: (val) => val!.isEmpty ? 'Enter title' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _amountController,
-                decoration: const InputDecoration(labelText: "Amount", border: OutlineInputBorder(), prefixText: "\$"),
+                decoration: const InputDecoration(labelText: "Amount", prefixText: "\$ "),
                 keyboardType: TextInputType.number,
                 validator: (val) => val!.isEmpty ? 'Enter amount' : null,
               ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: const Text("Due Date"),
-                subtitle: Text("${_dueDate.toLocal()}".split(' ')[0]),
-                trailing: const Icon(Icons.calendar_today),
+              const SizedBox(height: 24),
+              const Text("DEADLINE", style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1)),
+              const SizedBox(height: 12),
+              GestureDetector(
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
                     initialDate: _dueDate,
                     firstDate: DateTime.now(),
                     lastDate: DateTime(2101),
+                    builder: (context, child) => Theme(data: ThemeData.dark().copyWith(colorScheme: const ColorScheme.dark(primary: AppTheme.blueVibrant)), child: child!),
                   );
                   if (picked != null) setState(() => _dueDate = picked);
                 },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(color: AppTheme.surfaceLight, borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("${_dueDate.day}/${_dueDate.month}/${_dueDate.year}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Icon(Icons.calendar_today, size: 18, color: AppTheme.blueVibrant),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 40),
               _loading 
                 ? const Center(child: CircularProgressIndicator())
                 : ElevatedButton(
                     onPressed: _submit,
-                    style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-                    child: Text(_isBulk ? "Create Fees for Class" : "Create Fee"),
+                    child: Text(_isBulk ? "GENERATE CLASS FEES" : "CREATE INDIVIDUAL FEE"),
                   )
             ],
           ),
