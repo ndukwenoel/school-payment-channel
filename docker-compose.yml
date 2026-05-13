@@ -23,8 +23,29 @@ services:
       - DATABASE_URL=postgresql://postgres:password@db:5432/school_payment_db
       - SECRET_KEY=supersecretkey
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - db
+      - redis
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  worker:
+    build: ./server
+    command: celery -A worker.celery_app worker --loglevel=info
+    volumes:
+      - ./server:/app/server
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/school_payment_db
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - backend
+      - redis
 
   frontend:
     build: ./client

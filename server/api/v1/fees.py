@@ -10,13 +10,14 @@ router = APIRouter(
     tags=["Fees"]
 )
 
-from .auth import get_db, get_current_user, CheckRole
+from .auth import get_db, get_current_user
+from ...core.rbac import requires_permission
 
 @router.post("/", response_model=schemas.Fee)
 def create_fee(
     fee: schemas.FeeCreate, 
     db: Session = Depends(get_db), 
-    current_user: models.User = Depends(CheckRole(["admin", "school_admin"]))
+    current_user: models.User = Depends(requires_permission("can_create_fee"))
 ):
     if fee.amount <= 0:
         raise HTTPException(status_code=400, detail="Fee amount must be positive")
@@ -47,7 +48,7 @@ def create_fee(
 def create_bulk_fees(
     fee_data: schemas.FeeBulkCreate, 
     db: Session = Depends(get_db), 
-    current_user: models.User = Depends(CheckRole(["admin", "school_admin"]))
+    current_user: models.User = Depends(requires_permission("can_create_fee"))
 ):
     if fee_data.amount <= 0:
         raise HTTPException(status_code=400, detail="Fee amount must be positive")

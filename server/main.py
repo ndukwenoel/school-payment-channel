@@ -3,26 +3,32 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from . import models, database
 
-from .routers import auth, fees, schools, students, parents, payments, notifications, reports
-from .routers import erp_academic, erp_hr, erp_inventory, erp_collaboration
+from .api.v1 import auth, fees, schools, students, parents, payments, notifications, reports
+from .api.v1 import erp_academic, erp_hr, erp_inventory, erp_collaboration
 
 # Create tables
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Channel")
 
-app.include_router(auth.router)
-app.include_router(schools.router)
-app.include_router(students.router)
-app.include_router(fees.router)
-app.include_router(parents.router)
-app.include_router(payments.router)
-app.include_router(notifications.router)
-app.include_router(reports.router)
-app.include_router(erp_academic.router)
-app.include_router(erp_hr.router)
-app.include_router(erp_inventory.router)
-app.include_router(erp_collaboration.router)
+# API V1 Router setup
+from fastapi import APIRouter
+v1_router = APIRouter(prefix="/api/v1")
+
+v1_router.include_router(auth.router)
+v1_router.include_router(schools.router)
+v1_router.include_router(students.router)
+v1_router.include_router(fees.router)
+v1_router.include_router(parents.router)
+v1_router.include_router(payments.router)
+v1_router.include_router(notifications.router)
+v1_router.include_router(reports.router)
+v1_router.include_router(erp_academic.router)
+v1_router.include_router(erp_hr.router)
+v1_router.include_router(erp_inventory.router)
+v1_router.include_router(erp_collaboration.router)
+
+app.include_router(v1_router)
 
 from fastapi.responses import RedirectResponse
 

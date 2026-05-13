@@ -67,6 +67,7 @@ class Fee(Base):
     status = Column(String, default="pending") # pending, paid, partial, overdue
     student_id = Column(Integer, ForeignKey("students.id"))
     discount_id = Column(Integer, ForeignKey("discounts.id"), nullable=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 
     student = relationship("Student", back_populates="fees")
     discount = relationship("Discount", back_populates="fees")
@@ -81,6 +82,7 @@ class Payment(Base):
     transaction_id = Column(String)
     payment_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     payment_method = Column(String) # card, bank_transfer
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 
     fee = relationship("Fee", back_populates="payments")
 
@@ -92,6 +94,7 @@ class Discount(Base):
     percentage = Column(Float, default=0.0)
     flat_amount = Column(Float, default=0.0)
     description = Column(String)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 
     fees = relationship("Fee", back_populates="discount")
 
@@ -104,6 +107,7 @@ class NotificationLog(Base):
     message = Column(String)
     sent_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     status = Column(String, default="sent") # sent, failed
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 
 class ClassRoom(Base):
     __tablename__ = "classrooms"
@@ -229,4 +233,76 @@ class AcademicResource(Base):
     school = relationship("School", back_populates="resources")
     teacher = relationship("User")
     classroom = relationship("ClassRoom")
+
+# --- RBAC Models ---
+class Role(Base):
+    __tablename__ = "roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String) # e.g., "bursar", "principal"
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+
+    permissions = relationship("RolePermission", back_populates="role")
+
+class Permission(Base):
+    __tablename__ = "permissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True) # e.g., "can_create_fee"
+
+class RolePermission(Base):
+    __tablename__ = "role_permissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    role_id = Column(Integer, ForeignKey("roles.id"))
+    permission_id = Column(Integer, ForeignKey("permissions.id"))
+
+    role = relationship("Role", back_populates="permissions")
+    permission = relationship("Permission")
+
+# --- Audit Log ---
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    action = Column(String) # e.g., "UPDATE", "INSERT"
+    table_name = Column(String)
+    record_id = Column(String)
+    old_values = Column(String) # String for dev DB portability, JSON in prod
+    new_values = Column(String)
+    ip_address = Column(String, nullable=True)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+# --- Ledger Models ---
+class LedgerAccount(Base):
+    __tablename__ = "ledger_accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String) # e.g., "Parent Wallet", "School Revenue"
+    type = Column(String) # asset, liability, equity, revenue, expense
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+
+class LedgerTransaction(Base):
+    __tablename__ = "ledger_transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    description = Column(String)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    entries = relationship("LedgerEntry", back_populates="transaction")
+
+class LedgerEntry(Base):
+    __tablename__ = "ledger_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    transaction_id = Column(Integer, ForeignKey("ledger_transactions.id"))
+    account_id = Column(Integer, ForeignKey("ledger_accounts.id"))
+    amount = Column(Float)
+    type = Column(String) # "debit" or "credit"
+    
+    transaction = relationship("LedgerTransaction", back_populates="entries")
+    account = relationship("LedgerAccount")
 

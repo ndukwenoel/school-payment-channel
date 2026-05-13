@@ -58,11 +58,33 @@ def confirm_payment(payment: schemas.PaymentCreate, db: Session = Depends(get_db
         fee_id=payment.fee_id,
         amount_paid=payment.amount_paid,
         payment_method=payment.payment_method,
-        transaction_id=f"TXN-{datetime.now().timestamp()}" # In real world, pass from gateway
+        transaction_id=f"TXN-{datetime.now().timestamp()}", # In real world, pass from gateway
+        school_id=fee.school_id
     )
     db.add(new_payment)
+    db.flush() # Flush to get new_payment.id
+    
+    # 6. Ledger entry (Double-entry accounting)
+    from ...core.ledger import record_transaction
+    record_transaction(
+        db=db,
+        school_id=fee.school_id,
+        description=f"Payment for {fee.title} via {payment.payment_method}",
+        debit_account_name="Parent Wallet" if payment.payment_method == "wallet" else "Bank Account",
+        credit_account_name="School Revenue",
+        amount=payment.amount_paid
+    )
+    
     db.commit()
     db.refresh(new_payment)
+    
+    # 7. Offload receipt generation to Celery Worker
+    try:
+        from ...worker.tasks import send_payment_receipt
+        send_payment_receipt.delay(payment_id=new_payment.id, recipient_email=current_user.email)
+    except Exception as e:
+        print(f"Failed to queue background task: {e}")
+        
     return new_payment
 
 @router.get("/history", response_model=list[schemas.Payment])
