@@ -64,19 +64,25 @@ def confirm_payment(payment: schemas.PaymentCreate, db: Session = Depends(get_db
     db.add(new_payment)
     db.flush() # Flush to get new_payment.id
     
-    # 6. Ledger entry (Double-entry accounting)
-    from ...core.ledger import record_transaction
-    record_transaction(
-        db=db,
-        school_id=fee.school_id,
-        description=f"Payment for {fee.title} via {payment.payment_method}",
-        debit_account_name="Parent Wallet" if payment.payment_method == "wallet" else "Bank Account",
-        credit_account_name="School Revenue",
-        amount=payment.amount_paid
-    )
-    
     db.commit()
     db.refresh(new_payment)
+    
+    # 6. Dispatch asynchronous event for Ledger processing and other decoupled actions
+    from ...events import BaseEvent, EventDispatcher
+    event = BaseEvent(
+        event_type="PaymentReceived",
+        school_id=fee.school_id,
+        payload={
+            "payment_id": new_payment.id,
+            "fee_id": fee.id,
+            "fee_title": fee.title,
+            "amount": payment.amount_paid,
+            "payment_method": payment.payment_method,
+            "transaction_id": new_payment.transaction_id,
+            "user_email": current_user.email
+        }
+    )
+    EventDispatcher.publish(event)
     
     # 7. Offload receipt generation to Celery Worker
     try:

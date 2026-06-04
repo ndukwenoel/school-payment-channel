@@ -56,6 +56,22 @@ class Student(Base):
     fees = relationship("Fee", back_populates="student")
     attendance_records = relationship("Attendance", back_populates="student")
     grades = relationship("GradeRecord", back_populates="student")
+    virtual_accounts = relationship("VirtualAccount", back_populates="student")
+
+class VirtualAccount(Base):
+    __tablename__ = "virtual_accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    account_number = Column(String, unique=True, index=True)
+    account_name = Column(String)
+    bank_name = Column(String)
+    student_id = Column(Integer, ForeignKey("students.id"))
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    status = Column(String, default="active") # active, inactive
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    student = relationship("Student", back_populates="virtual_accounts")
+    school = relationship("School")
 
 class Fee(Base):
     __tablename__ = "fees"

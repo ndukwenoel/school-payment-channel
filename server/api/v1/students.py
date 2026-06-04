@@ -42,6 +42,20 @@ def create_student(
     db.add(db_student)
     db.commit()
     db.refresh(db_student)
+    
+    from ...events import BaseEvent, EventDispatcher
+    event = BaseEvent(
+        event_type="StudentEnrolled",
+        school_id=db_student.school_id,
+        payload={
+            "student_id": db_student.id,
+            "enrollment_number": db_student.enrollment_number,
+            "grade": db_student.grade,
+            "parent_id": db_student.parent_id
+        }
+    )
+    EventDispatcher.publish(event)
+    
     return db_student
 
 @router.post("/import")
@@ -71,6 +85,7 @@ async def import_students(
     imported_count = 0
     errors = []
     
+    successfully_imported_students = []
     # Issue 8: Atomic Import (using transaction)
     with db.begin_nested(): # Start a sub-transaction
         for i, row in enumerate(csv_reader):
@@ -119,11 +134,28 @@ async def import_students(
                     school_id=current_user.school_id
                 )
                 db.add(new_student)
+                db.flush() # Flush to populate new_student.id
+                successfully_imported_students.append(new_student)
                 imported_count += 1
             except Exception as e:
                 errors.append(f"Row {i+1}: Error - {str(e)}")
-                # If we want to be TRULY atomic and fail the whole import on ANY error:
-                # raise e 
 
     db.commit()
+    
+    # Dispatch events for imported students
+    if successfully_imported_students:
+        from ...events import BaseEvent, EventDispatcher
+        for s in successfully_imported_students:
+            event = BaseEvent(
+                event_type="StudentEnrolled",
+                school_id=s.school_id,
+                payload={
+                    "student_id": s.id,
+                    "enrollment_number": s.enrollment_number,
+                    "grade": s.grade,
+                    "parent_id": s.parent_id
+                }
+            )
+            EventDispatcher.publish(event)
+            
     return {"message": "Import processed", "imported_count": imported_count, "errors": errors}

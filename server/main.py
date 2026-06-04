@@ -5,6 +5,7 @@ from . import models, database
 
 from .api.v1 import auth, fees, schools, students, parents, payments, notifications, reports
 from .api.v1 import erp_academic, erp_hr, erp_inventory, erp_collaboration
+from .api.v1 import virtual_accounts
 
 # Create tables
 models.Base.metadata.create_all(bind=database.engine)
@@ -21,6 +22,7 @@ v1_router.include_router(students.router)
 v1_router.include_router(fees.router)
 v1_router.include_router(parents.router)
 v1_router.include_router(payments.router)
+v1_router.include_router(virtual_accounts.router)
 v1_router.include_router(notifications.router)
 v1_router.include_router(reports.router)
 v1_router.include_router(erp_academic.router)
@@ -49,6 +51,28 @@ app.add_middleware(
 @app.get("/api/health")
 def read_root():
     return {"status": "ok", "message": "Channel API is running"}
+
+from .events import BaseEvent, EventDispatcher
+
+@app.post("/api/test-event")
+def test_dispatch_event(event_type: str = "StudentEnrolled"):
+    """
+    Test endpoint to verify the event infrastructure.
+    """
+    payload = {}
+    if event_type == "StudentEnrolled":
+        payload = {"student_id": 123}
+    elif event_type == "PaymentReceived":
+        payload = {"payment_id": 456, "amount": 1500.0}
+        
+    event = BaseEvent(
+        event_type=event_type,
+        payload=payload,
+        school_id=1
+    )
+    
+    EventDispatcher.publish(event)
+    return {"status": "published", "event_id": event.event_id, "event_type": event.event_type}
 
 # Serve Frontend (Client)
 # Ensure the client directory exists one level up or adjust path

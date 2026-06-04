@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .. import database, models, schemas
-from .auth import get_db, get_current_user
+from .auth import get_db, get_current_user, CheckRole
 from sqlalchemy import func
 
 router = APIRouter(
@@ -46,12 +46,20 @@ def get_dashboard_summary(
         if balance > 0:
             outstanding_fees += balance
 
-    # Total Revenue (sum of all payments for school's students)
-    total_revenue = db.query(func.sum(models.Payment.amount_paid))\
-        .join(models.Fee)\
-        .join(models.Student)\
-        .filter(models.Student.school_id == current_user.school_id)\
-        .scalar() or 0.0
+    # Ledger-driven Total Revenue 
+    school_revenue_account = db.query(models.LedgerAccount).filter(
+        models.LedgerAccount.name == "School Revenue",
+        models.LedgerAccount.school_id == current_user.school_id
+    ).first()
+    
+    if school_revenue_account:
+        total_revenue = db.query(func.sum(models.LedgerEntry.amount))\
+            .filter(
+                models.LedgerEntry.account_id == school_revenue_account.id,
+                models.LedgerEntry.type == "credit"
+            ).scalar() or 0.0
+    else:
+        total_revenue = 0.0
 
     return {
         "total_students": total_students,

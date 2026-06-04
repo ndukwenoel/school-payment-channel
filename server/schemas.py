@@ -98,6 +98,25 @@ class Payment(PaymentBase):
     class Config:
         from_attributes = True
 
+# --- Virtual Account Schemas ---
+class VirtualAccountBase(BaseModel):
+    account_number: str
+    account_name: str
+    bank_name: str
+    student_id: int
+    school_id: int
+
+class VirtualAccountCreate(VirtualAccountBase):
+    pass
+
+class VirtualAccount(VirtualAccountBase):
+    id: int
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
 # --- School Schemas ---
 class SchoolBase(BaseModel):
     name: str
