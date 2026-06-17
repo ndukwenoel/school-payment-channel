@@ -53,7 +53,7 @@ class Student(Base):
     classroom_id = Column(Integer, ForeignKey("classrooms.id"), nullable=True)
     
     classroom = relationship("ClassRoom", back_populates="students")
-    fees = relationship("Fee", back_populates="student")
+    invoices = relationship("Invoice", back_populates="student")
     attendance_records = relationship("Attendance", back_populates="student")
     grades = relationship("GradeRecord", back_populates="student")
     virtual_accounts = relationship("VirtualAccount", back_populates="student")
@@ -73,34 +73,45 @@ class VirtualAccount(Base):
     student = relationship("Student", back_populates="virtual_accounts")
     school = relationship("School")
 
-class Fee(Base):
-    __tablename__ = "fees"
+class Invoice(Base):
+    __tablename__ = "invoices"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String) # e.g. "Term 1 Tuition", "Bus Fee"
-    amount = Column(Float)
+    title = Column(String) # e.g. "Term 1 Invoice"
     due_date = Column(DateTime)
     status = Column(String, default="pending") # pending, paid, partial, overdue
     student_id = Column(Integer, ForeignKey("students.id"))
     discount_id = Column(Integer, ForeignKey("discounts.id"), nullable=True)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 
-    student = relationship("Student", back_populates="fees")
-    discount = relationship("Discount", back_populates="fees")
-    payments = relationship("Payment", back_populates="fee")
+    student = relationship("Student", back_populates="invoices")
+    discount = relationship("Discount", back_populates="invoices")
+    line_items = relationship("InvoiceLineItem", back_populates="invoice")
+    payment_attempts = relationship("PaymentAttempt", back_populates="invoice")
 
-class Payment(Base):
-    __tablename__ = "payments"
+class InvoiceLineItem(Base):
+    __tablename__ = "invoice_line_items"
 
     id = Column(Integer, primary_key=True, index=True)
-    fee_id = Column(Integer, ForeignKey("fees.id"))
-    amount_paid = Column(Float)
-    transaction_id = Column(String)
+    invoice_id = Column(Integer, ForeignKey("invoices.id"))
+    title = Column(String)
+    amount = Column(Float)
+    
+    invoice = relationship("Invoice", back_populates="line_items")
+
+class PaymentAttempt(Base):
+    __tablename__ = "payment_attempts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    invoice_id = Column(Integer, ForeignKey("invoices.id"))
+    amount = Column(Float)
+    provider = Column(String) # paystack, flutterwave, mock
+    status = Column(String, default="pending") # pending, success, failed
+    transaction_id = Column(String, nullable=True)
     payment_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    payment_method = Column(String) # card, bank_transfer
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 
-    fee = relationship("Fee", back_populates="payments")
+    invoice = relationship("Invoice", back_populates="payment_attempts")
 
 class Discount(Base):
     __tablename__ = "discounts"
@@ -112,7 +123,7 @@ class Discount(Base):
     description = Column(String)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 
-    fees = relationship("Fee", back_populates="discount")
+    invoices = relationship("Invoice", back_populates="discount")
 
 class NotificationLog(Base):
     __tablename__ = "notification_logs"
@@ -322,3 +333,12 @@ class LedgerEntry(Base):
     transaction = relationship("LedgerTransaction", back_populates="entries")
     account = relationship("LedgerAccount")
 
+class PostingRule(Base):
+    __tablename__ = "posting_rules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_type = Column(String) # e.g. "payment.received", "payment.exception"
+    provider = Column(String, nullable=True) # e.g. "paystack", "mock", "virtual_account"
+    debit_account_name = Column(String)
+    credit_account_name = Column(String)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)

@@ -11,8 +11,8 @@ import 'features/auth/presentation/login_page.dart';
 import 'features/auth/presentation/register_page.dart';
 import 'features/dashboard/dashboard_page.dart';
 import 'features/payments/presentation/link_student_page.dart';
-import 'features/payments/presentation/fees_list_page.dart';
-import 'features/payments/presentation/fee_detail_page.dart';
+import 'features/payments/presentation/invoices_list_page.dart';
+import 'features/payments/presentation/invoice_detail_page.dart';
 import 'features/payments/presentation/payment_method_page.dart';
 import 'features/payments/presentation/payment_success_page.dart';
 import 'features/payments/data/payment_models.dart';
@@ -25,7 +25,7 @@ import 'features/erp/presentation/payroll_page.dart';
 import 'features/erp/presentation/results_page.dart';
 import 'features/erp/presentation/broadcast_page.dart';
 import 'features/erp/presentation/resource_pages.dart';
-
+import 'features/dashboard/screens/finance_dashboard_screen.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -78,10 +78,6 @@ class AppView extends StatelessWidget {
           builder: (context, state) => const DashboardPage(),
         ),
         GoRoute(
-          path: '/create-fee',
-          builder: (context, state) => const CreateFeePage(),
-        ),
-        GoRoute(
           path: '/link-student',
           builder: (context, state) => const LinkStudentPage(),
         ),
@@ -90,33 +86,29 @@ class AppView extends StatelessWidget {
           builder: (context, state) => const NotificationHistoryPage(),
         ),
         GoRoute(
-          path: '/fees',
-          builder: (context, state) => const FeesListPage(),
+          path: '/invoices',
+          builder: (context, state) => const InvoicesListPage(),
         ),
         GoRoute(
-          path: '/fee-detail',
+          path: '/invoice-detail',
           builder: (context, state) {
-            final fee = state.extra as Fee;
-            return FeeDetailPage(fee: fee);
+            final invoice = state.extra as Invoice;
+            return InvoiceDetailPage(invoice: invoice);
           },
         ),
         GoRoute(
           path: '/payment-method',
           builder: (context, state) {
-            final fee = state.extra as Fee;
-            return PaymentMethodPage(fee: fee);
+            final invoice = state.extra as Invoice;
+            return PaymentMethodPage(invoice: invoice);
           },
         ),
         GoRoute(
           path: '/payment-success',
           builder: (context, state) {
-            final fee = state.extra as Fee;
-            return PaymentSuccessPage(fee: fee);
+            final invoice = state.extra as Invoice;
+            return PaymentSuccessPage(invoice: invoice);
           },
-        ),
-        GoRoute(
-          path: '/history',
-          builder: (context, state) => const PaymentHistoryPage(),
         ),
         GoRoute(
           path: '/erp/academic',
@@ -150,6 +142,10 @@ class AppView extends StatelessWidget {
           path: '/erp/review',
           builder: (context, state) => const ResourceReviewPage(),
         ),
+        GoRoute(
+          path: '/erp/finance',
+          builder: (context, state) => const FinanceDashboardScreen(),
+        ),
       ],
       redirect: (context, state) {
         // Redirection logic can be added here to protect /dashboard
@@ -166,4 +162,3 @@ class AppView extends StatelessWidget {
     );
   }
 }
-

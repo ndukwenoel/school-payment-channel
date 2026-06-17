@@ -4,8 +4,8 @@ import '../data/payment_models.dart';
 import '../../../core/theme.dart';
 
 class PaymentSuccessPage extends StatelessWidget {
-  final Fee fee;
-  const PaymentSuccessPage({super.key, required this.fee});
+  final Invoice invoice;
+  const PaymentSuccessPage({super.key, required this.invoice});
 
   @override
   Widget build(BuildContext context) {
@@ -18,8 +18,8 @@ class PaymentSuccessPage extends StatelessWidget {
               const SizedBox(height: 40),
               _buildSuccessIcon(),
               const SizedBox(height: 24),
-              const Text("Payment Successful", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              const Text("Your transaction has been processed", style: TextStyle(fontSize: 14, color: Colors.white70)),
+              const Text("Payment Processing", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const Text("Your transaction is being verified", style: TextStyle(fontSize: 14, color: Colors.white70)),
               const SizedBox(height: 32),
               _buildReceiptCard(),
               const SizedBox(height: 24),
@@ -28,7 +28,7 @@ class PaymentSuccessPage extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(4)),
                 child: const Text(
-                  "TXN-ID: 8829-XPK-4410",
+                  "Verification can take up to 2 minutes.",
                   style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.white70),
                   textAlign: TextAlign.center,
                 ),
@@ -41,7 +41,7 @@ class PaymentSuccessPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               OutlinedButton(
-                onPressed: () => context.go('/fees'),
+                onPressed: () => context.go('/invoices'),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 56),
                   side: const BorderSide(color: Colors.white24),
@@ -80,12 +80,11 @@ class PaymentSuccessPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text("PAYMENT BREAKDOWN", style: TextStyle(color: AppTheme.bluePale, fontSize: 11, letterSpacing: 1)),
-              const Text("OCT 10, 2023", style: TextStyle(color: Colors.white38, fontSize: 11)),
+              Text("${DateTime.now().month}/${DateTime.now().day}/${DateTime.now().year}", style: const TextStyle(color: Colors.white38, fontSize: 11)),
             ],
           ),
           const SizedBox(height: 24),
-          _buildReceiptRow(fee.title, fee.amount),
-          _buildReceiptRow("Service Fee", 0.00),
+          _buildReceiptRow(invoice.title, invoice.totalAmount),
           const SizedBox(height: 16),
           const Divider(color: Colors.white10),
           const SizedBox(height: 16),
@@ -93,7 +92,7 @@ class PaymentSuccessPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text("Total Paid", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              Text("\$${fee.amount.toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.limeLight)),
+              Text("\$${invoice.totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.limeLight)),
             ],
           )
         ],

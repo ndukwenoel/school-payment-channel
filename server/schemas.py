@@ -55,45 +55,60 @@ class Discount(DiscountBase):
     class Config:
         from_attributes = True
 
-# --- Fee Schemas ---
-class FeeBase(BaseModel):
+# --- Invoice Line Item Schemas ---
+class InvoiceLineItemBase(BaseModel):
     title: str
     amount: float
-    due_date: datetime
-    student_id: int
-    discount_id: Optional[int] = None
 
-class FeeCreate(FeeBase):
+class InvoiceLineItemCreate(InvoiceLineItemBase):
     pass
 
-class FeeBulkCreate(BaseModel):
-    title: str
-    amount: float
-    due_date: datetime
-    grade: str
-    discount_id: Optional[int] = None
-
-class Fee(FeeBase):
+class InvoiceLineItem(InvoiceLineItemBase):
     id: int
-    status: str
-    # computed fields typically handled in response model logic, keeping simple for now
+    invoice_id: int
 
     class Config:
         from_attributes = True
 
-# --- Payment Schemas ---
-class PaymentBase(BaseModel):
-    fee_id: int
-    amount_paid: float
-    payment_method: str = "card"
+# --- Invoice Schemas ---
+class InvoiceBase(BaseModel):
+    title: str
+    due_date: datetime
+    student_id: int
+    discount_id: Optional[int] = None
 
-class PaymentCreate(PaymentBase):
+class InvoiceCreate(InvoiceBase):
+    line_items: List[InvoiceLineItemCreate]
+
+class InvoiceBulkCreate(BaseModel):
+    title: str
+    due_date: datetime
+    grade: str
+    discount_id: Optional[int] = None
+    line_items: List[InvoiceLineItemCreate]
+
+class Invoice(InvoiceBase):
+    id: int
+    status: str
+    line_items: List[InvoiceLineItem] = []
+
+    class Config:
+        from_attributes = True
+
+# --- Payment Attempt Schemas ---
+class PaymentAttemptBase(BaseModel):
+    invoice_id: int
+    amount: float
+    provider: str = "paystack"
+
+class PaymentAttemptCreate(PaymentAttemptBase):
     pass
 
-class Payment(PaymentBase):
+class PaymentAttempt(PaymentAttemptBase):
     id: int
+    status: str
+    transaction_id: Optional[str] = None
     payment_date: datetime
-    transaction_id: str
 
     class Config:
         from_attributes = True
@@ -167,8 +182,8 @@ class NotificationLog(NotificationBase):
 class DashboardStats(BaseModel):
     total_students: int
     total_revenue: float
-    outstanding_fees: float
-    total_fees_created: float
+    outstanding_invoices: float
+    total_invoices_created: float
 
 # --- ERP Schemas ---
 
@@ -349,3 +364,40 @@ class AcademicResource(AcademicResourceBase):
     teacher_id: int
     class Config:
         from_attributes = True
+
+# --- Ledger Schemas ---
+
+class PostingRuleBase(BaseModel):
+    event_type: str
+    provider: Optional[str] = None
+    debit_account_name: str
+    credit_account_name: str
+    school_id: Optional[int] = None
+
+class PostingRuleCreate(PostingRuleBase):
+    pass
+
+class PostingRule(PostingRuleBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+# --- Financial Intelligence Schemas ---
+
+class AgingBucket(BaseModel):
+    bucket: str # "0-30 days", "31-60 days", "61-90 days", "90+ days"
+    total_amount: float
+    invoice_ids: List[int]
+
+class AgingReportResponse(BaseModel):
+    total_overdue: float
+    buckets: List[AgingBucket]
+
+class RevenueReportResponse(BaseModel):
+    total_revenue: float
+    # We could add more granular data here if needed, like daily breakdown.
+    
+class ExpectedSettlementResponse(BaseModel):
+    total_expected: float
+    providers: dict # e.g. {"paystack": 5000, "flutterwave": 1000}
+

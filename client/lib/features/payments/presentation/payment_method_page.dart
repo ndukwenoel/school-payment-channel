@@ -1,18 +1,77 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../data/payment_models.dart';
+import '../data/payment_repository.dart';
 import '../../../core/theme.dart';
 
 class PaymentMethodPage extends StatefulWidget {
-  final Fee fee;
-  const PaymentMethodPage({super.key, required this.fee});
+  final Invoice invoice;
+  const PaymentMethodPage({super.key, required this.invoice});
 
   @override
   State<PaymentMethodPage> createState() => _PaymentMethodPageState();
 }
 
 class _PaymentMethodPageState extends State<PaymentMethodPage> {
-  String _selectedMethod = 'Apple Pay';
+  String _selectedMethod = 'Paystack Checkout';
+  bool _isLoading = false;
+
+  Future<void> _handlePayment() async {
+    setState(() => _isLoading = true);
+    try {
+      final repo = context.read<PaymentRepository>();
+      final intent = await repo.createPaymentIntent(widget.invoice.id, widget.invoice.totalAmount);
+      
+      if (intent.authorizationUrl != null) {
+        final uri = Uri.parse(intent.authorizationUrl!);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          // Show dialog instructing the user to return here after completing payment
+          if (mounted) {
+             _showAwaitingPaymentDialog();
+          }
+        } else {
+          throw Exception('Could not launch payment URL');
+        }
+      } else {
+        // Fallback for Mock or intent without URL
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Intent created. Processing mock payment...")));
+           context.push('/payment-success', extra: widget.invoice);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _showAwaitingPaymentDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text("Complete Payment"),
+        content: const Text("Please complete the payment in your browser. Once done, return to the app and click Verify."),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.push('/payment-success', extra: widget.invoice);
+            },
+            child: const Text("I have paid"),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,16 +84,9 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             children: [
               _buildNavHeader(context),
               const SizedBox(height: 24),
-              _buildSectionLabel("DIGITAL WALLETS"),
-              _buildMethodOption("Apple Pay", "Default Wallet", Icons.apple, Colors.black),
-              _buildMethodOption("Google Pay", "Fast Checkout", Icons.g_mobiledata, Colors.white, iconTextColor: Colors.blue),
-              const SizedBox(height: 24),
-              _buildSectionLabel("SAVED CARDS"),
-              _buildMethodOption("Visa Ending in 4242", "Expires 12/26", Icons.credit_card, Colors.blueAccent),
-              _buildMethodOption("Mastercard Platinum", "Expires 05/25", Icons.credit_card, Colors.redAccent),
-              const SizedBox(height: 24),
-              _buildSectionLabel("BANK ACCOUNTS"),
-              _buildMethodOption("Chase Savings", "Direct Debit •••• 8812", Icons.account_balance, AppTheme.greenDeep),
+              _buildSectionLabel("SUPPORTED METHODS"),
+              _buildMethodOption("Paystack Checkout", "Card, Bank Transfer, USSD", Icons.credit_card, Colors.blueAccent),
+              _buildMethodOption("Offline Bank Transfer", "Manual Verification", Icons.account_balance, AppTheme.greenDeep),
               const SizedBox(height: 100),
             ],
           ),
@@ -125,25 +177,17 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         children: [
           const Text("🔒 SECURE 256-BIT SSL ENCRYPTION", style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 1)),
           const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 56),
-              side: const BorderSide(color: Colors.white24, style: BorderStyle.solid),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text("+ Add New Payment Method", style: TextStyle(color: Colors.white)),
-          ),
-          const SizedBox(height: 8),
           ElevatedButton(
-            onPressed: () => context.push('/payment-success', extra: widget.fee),
-            child: Row(
+            onPressed: _isLoading ? null : _handlePayment,
+            child: _isLoading 
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("Continue to Pay"),
                 Row(
                   children: [
-                    Text("\$${widget.fee.amount.toStringAsFixed(2)}"),
+                    Text("\$${widget.invoice.totalAmount.toStringAsFixed(2)}"),
                     const SizedBox(width: 8),
                     const Icon(Icons.arrow_forward_ios, size: 14),
                   ],

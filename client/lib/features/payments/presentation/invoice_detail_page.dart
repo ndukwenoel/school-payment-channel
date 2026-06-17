@@ -3,15 +3,15 @@ import 'package:go_router/go_router.dart';
 import '../data/payment_models.dart';
 import '../../../core/theme.dart';
 
-class FeeDetailPage extends StatefulWidget {
-  final Fee fee;
-  const FeeDetailPage({super.key, required this.fee});
+class InvoiceDetailPage extends StatefulWidget {
+  final Invoice invoice;
+  const InvoiceDetailPage({super.key, required this.invoice});
 
   @override
-  State<FeeDetailPage> createState() => _FeeDetailPageState();
+  State<InvoiceDetailPage> createState() => _InvoiceDetailPageState();
 }
 
-class _FeeDetailPageState extends State<FeeDetailPage> {
+class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   bool _payInFull = true;
 
   @override
@@ -57,7 +57,7 @@ class _FeeDetailPageState extends State<FeeDetailPage> {
           ),
         ),
         const SizedBox(width: 16),
-        const Text("FEE DETAILS", style: TextStyle(color: Colors.white70, fontSize: 13, letterSpacing: 0.5)),
+        const Text("INVOICE DETAILS", style: TextStyle(color: Colors.white70, fontSize: 13, letterSpacing: 0.5)),
       ],
     );
   }
@@ -76,9 +76,9 @@ class _FeeDetailPageState extends State<FeeDetailPage> {
         children: [
           const Text("CURRENT BALANCE DUE", style: TextStyle(color: AppTheme.limeLight, fontSize: 11, letterSpacing: 0.5)),
           const SizedBox(height: 4),
-          Text(widget.fee.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          Text(widget.invoice.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text("\$${widget.fee.amount.toStringAsFixed(2)}", style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w500)),
+          Text("\$${widget.invoice.totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -96,11 +96,9 @@ class _FeeDetailPageState extends State<FeeDetailPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: AppTheme.surfaceLight, borderRadius: BorderRadius.circular(8)),
       child: Column(
-        children: [
-          _buildBreakdownRow("Core Tuition", widget.fee.amount * 0.85),
-          _buildBreakdownRow("Activity Fee", widget.fee.amount * 0.05),
-          _buildBreakdownRow("Technology Fee", widget.fee.amount * 0.10),
-        ],
+        children: widget.invoice.lineItems.map((item) {
+          return _buildBreakdownRow(item.title, item.amount);
+        }).toList(),
       ),
     );
   }
@@ -123,8 +121,8 @@ class _FeeDetailPageState extends State<FeeDetailPage> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: List.generate(6, (index) {
-          int day = widget.fee.dueDate.day - 3 + index;
-          bool active = day == widget.fee.dueDate.day;
+          int day = widget.invoice.dueDate.day - 3 + index;
+          bool active = day == widget.invoice.dueDate.day;
           return Container(
             width: 60,
             height: 70,
@@ -149,9 +147,9 @@ class _FeeDetailPageState extends State<FeeDetailPage> {
   Widget _buildPaymentOptions() {
     return Column(
       children: [
-        _buildOptionCard("Pay in Full", "One-time payment of \$${widget.fee.amount.toStringAsFixed(2)}", true),
+        _buildOptionCard("Pay in Full", "One-time payment of \$${widget.invoice.totalAmount.toStringAsFixed(2)}", true),
         const SizedBox(height: 8),
-        _buildOptionCard("Installment Plan", "4 payments of \$${(widget.fee.amount / 4).toStringAsFixed(2)} / mo", false),
+        _buildOptionCard("Installment Plan", "4 payments of \$${(widget.invoice.totalAmount / 4).toStringAsFixed(2)} / mo", false),
       ],
     );
   }
@@ -201,14 +199,14 @@ class _FeeDetailPageState extends State<FeeDetailPage> {
         ),
       ),
       child: ElevatedButton(
-        onPressed: () => context.push('/payment-method', extra: widget.fee),
+        onPressed: () => context.push('/payment-method', extra: widget.invoice),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text("Confirm & Pay Now"),
             Row(
               children: [
-                Text("\$${widget.fee.amount.toStringAsFixed(2)}"),
+                Text("\$${widget.invoice.totalAmount.toStringAsFixed(2)}"),
                 const SizedBox(width: 8),
                 const Icon(Icons.arrow_forward_ios, size: 14),
               ],

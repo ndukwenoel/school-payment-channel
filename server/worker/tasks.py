@@ -1,7 +1,5 @@
 import time
 from .celery_app import celery_app
-# In a real scenario, you'd import SQLAlchemy sessions and models here
-# to perform actual DB work asynchronously.
 
 @celery_app.task(name="send_payment_receipt")
 def send_payment_receipt(payment_id: int, recipient_email: str):
@@ -57,40 +55,48 @@ def handle_student_enrolled(payload: dict, school_id: int):
     enrollment_number = payload.get("enrollment_number")
     grade = payload.get("grade")
     
-    print(f"[EVENT HANDLER] Processing StudentEnrolled for student {student_id} ({enrollment_number}). Triggering fee generation...")
+    print(f"[EVENT HANDLER] Processing StudentEnrolled for student {student_id} ({enrollment_number}). Triggering invoice generation...")
     
     from ..database import SessionLocal
-    from ..models import Fee
+    from ..models import Invoice, InvoiceLineItem
     from datetime import datetime, timedelta, timezone
     
     db = SessionLocal()
     try:
-        fee_title = f"Registration Fee - {grade}"
+        invoice_title = f"Registration Invoice - {grade}"
         
-        # Idempotency check: Don't generate the same fee twice for this student
-        existing_fee = db.query(Fee).filter(
-            Fee.student_id == student_id,
-            Fee.title == fee_title
+        # Idempotency check: Don't generate the same invoice twice for this student
+        existing_invoice = db.query(Invoice).filter(
+            Invoice.student_id == student_id,
+            Invoice.title == invoice_title
         ).first()
         
-        if existing_fee:
-            print(f"[EVENT HANDLER] Fee '{fee_title}' already exists for student {student_id}. Skipping.")
+        if existing_invoice:
+            print(f"[EVENT HANDLER] Invoice '{invoice_title}' already exists for student {student_id}. Skipping.")
             return
             
-        new_fee = Fee(
-            title=fee_title,
-            amount=500.00,  # Standard registration amount
+        new_invoice = Invoice(
+            title=invoice_title,
             due_date=datetime.now(timezone.utc) + timedelta(days=14),
             status="pending",
             student_id=student_id,
             school_id=school_id
         )
-        db.add(new_fee)
+        db.add(new_invoice)
+        db.flush()
+        
+        line_item = InvoiceLineItem(
+            invoice_id=new_invoice.id,
+            title="Registration Fee",
+            amount=500.00
+        )
+        db.add(line_item)
+        
         db.commit()
-        print(f"[EVENT HANDLER] Successfully generated initial fee for student {student_id}.")
+        print(f"[EVENT HANDLER] Successfully generated initial invoice for student {student_id}.")
     except Exception as e:
         db.rollback()
-        print(f"[EVENT HANDLER] Error generating fee: {e}")
+        print(f"[EVENT HANDLER] Error generating invoice: {e}")
         raise
     finally:
         db.close()
@@ -98,19 +104,18 @@ def handle_student_enrolled(payload: dict, school_id: int):
 def handle_payment_received(payload: dict, school_id: int):
     payment_id = payload.get("payment_id")
     amount = payload.get("amount")
-    fee_title = payload.get("fee_title")
-    payment_method = payload.get("payment_method")
+    provider = payload.get("provider")
+    transaction_id = payload.get("transaction_id")
     
-    print(f"[EVENT HANDLER] Processing PaymentReceived for payment {payment_id} (${amount}). Triggering ledger update...")
+    print(f"[EVENT HANDLER] Processing PaymentReceived for transaction {transaction_id} (${amount}). Triggering matching and ledger update...")
     
     from ..database import SessionLocal
-    from ..core.ledger import record_transaction
-    from ..models import LedgerTransaction
+    from ..core.ledger import record_event_transaction
+    from ..models import LedgerTransaction, PaymentAttempt, Invoice
     
     db = SessionLocal()
     try:
-        # Idempotency check: Ensure we don't process the same payment twice
-        description = f"Payment for {fee_title} via {payment_method} [REF:PAY-{payment_id}]"
+        description = f"Payment via {provider} [REF:{transaction_id}]"
         
         existing_txn = db.query(LedgerTransaction).filter(
             LedgerTransaction.description == description,
@@ -118,22 +123,57 @@ def handle_payment_received(payload: dict, school_id: int):
         ).first()
         
         if existing_txn:
-            print(f"[EVENT HANDLER] Ledger entry already exists for Payment {payment_id}. Skipping.")
+            print(f"[EVENT HANDLER] Ledger entry already exists for Payment {transaction_id}. Skipping.")
             return
             
-        record_transaction(
-            db=db,
-            school_id=school_id,
-            description=description,
-            debit_account_name="Parent Wallet" if payment_method == "wallet" else "Bank Account",
-            credit_account_name="School Revenue",
-            amount=amount
-        )
+        # Match against a PaymentAttempt
+        payment_attempt = db.query(PaymentAttempt).filter(
+            PaymentAttempt.transaction_id == transaction_id,
+            PaymentAttempt.school_id == school_id
+        ).first()
+        
+        if payment_attempt:
+            payment_attempt.status = "success"
+            invoice = payment_attempt.invoice
+            
+            # Recalculate status
+            total_paid = sum(p.amount for p in invoice.payment_attempts if p.status == "success")
+            total_amount = sum(item.amount for item in invoice.line_items)
+            
+            if total_paid >= total_amount:
+                invoice.status = "paid"
+            else:
+                invoice.status = "partial"
+                
+            record_event_transaction(
+                db=db,
+                school_id=school_id,
+                description=description,
+                event_type="payment.received",
+                provider=provider,
+                amount=amount,
+                fallback_debit="Bank Account",
+                fallback_credit="School Revenue"
+            )
+            print(f"[EVENT HANDLER] Successfully matched transaction {transaction_id} to Invoice {invoice.id} and recorded ledger.")
+        else:
+            # Exception Handling: No matching payment attempt found
+            print(f"[EVENT HANDLER] Exception: Unmatched {provider} transaction {transaction_id}. Routing to Unreconciled Funds.")
+            record_event_transaction(
+                db=db,
+                school_id=school_id,
+                description=f"Exception: Unmatched {provider} Payment [REF:EXC-{transaction_id}]",
+                event_type="payment.exception",
+                provider=provider,
+                amount=amount,
+                fallback_debit="Bank Account",
+                fallback_credit="Unreconciled Funds"
+            )
+            
         db.commit()
-        print(f"[EVENT HANDLER] Successfully recorded ledger transaction for Payment {payment_id}.")
     except Exception as e:
         db.rollback()
-        print(f"[EVENT HANDLER] Error recording ledger transaction: {e}")
+        print(f"[EVENT HANDLER] Error matching payment transaction: {e}")
         raise
     finally:
         db.close()
@@ -144,11 +184,12 @@ def handle_virtual_account_funded(payload: dict, school_id: int):
     amount = payload.get("amount")
     transaction_ref = payload.get("transaction_ref")
     
-    print(f"[EVENT HANDLER] Processing VirtualAccountFunded for Student {student_id} (${amount}). Triggering Ledger/Fee Auto-matching...")
+    print(f"[EVENT HANDLER] Processing VirtualAccountFunded for Student {student_id} (${amount}). Triggering Ledger/Invoice Auto-matching...")
     
     from ..database import SessionLocal
-    from ..core.ledger import record_transaction
-    from ..models import LedgerTransaction, Fee, Payment
+    from ..core.ledger import record_event_transaction
+    from ..models import LedgerTransaction, Invoice, PaymentAttempt
+    from datetime import datetime, timezone
     
     db = SessionLocal()
     try:
@@ -164,38 +205,57 @@ def handle_virtual_account_funded(payload: dict, school_id: int):
             return
             
         # 2. Write to Ledger
-        record_transaction(
+        record_event_transaction(
             db=db,
             school_id=school_id,
             description=description,
-            debit_account_name="Virtual Account Wallet",
-            credit_account_name="School Revenue",
-            amount=amount
+            event_type="virtual_account.funded",
+            provider="virtual_account",
+            amount=amount,
+            fallback_debit="Virtual Account Wallet",
+            fallback_credit="School Revenue"
         )
         
-        # 3. Auto-match to oldest pending Fee
-        pending_fee = db.query(Fee).filter(
-            Fee.student_id == student_id,
-            Fee.status.in_(["pending", "partial"])
-        ).order_by(Fee.due_date.asc()).first()
+        # 3. Auto-match to oldest pending Invoice
+        pending_invoice = db.query(Invoice).filter(
+            Invoice.student_id == student_id,
+            Invoice.status.in_(["pending", "partial"])
+        ).order_by(Invoice.due_date.asc()).first()
         
-        if pending_fee:
-            print(f"[EVENT HANDLER] Auto-matching ${amount} to Fee ID {pending_fee.id}")
-            new_payment = Payment(
-                fee_id=pending_fee.id,
-                amount_paid=amount,
-                payment_method="virtual_account",
+        if pending_invoice:
+            print(f"[EVENT HANDLER] Auto-matching ${amount} to Invoice ID {pending_invoice.id}")
+            new_payment = PaymentAttempt(
+                invoice_id=pending_invoice.id,
+                amount=amount,
+                provider="virtual_account",
                 transaction_id=f"VAM-{transaction_ref}",
-                school_id=school_id
+                school_id=school_id,
+                status="success",
+                payment_date=datetime.now(timezone.utc)
             )
             db.add(new_payment)
             
             # Recalculate status
-            total_paid = sum(p.amount_paid for p in pending_fee.payments) + amount
-            if total_paid >= pending_fee.amount:
-                pending_fee.status = "paid"
+            total_paid = sum(p.amount for p in pending_invoice.payment_attempts if p.status == "success") + amount
+            total_amount = sum(item.amount for item in pending_invoice.line_items)
+            
+            if total_paid >= total_amount:
+                pending_invoice.status = "paid"
             else:
-                pending_fee.status = "partial"
+                pending_invoice.status = "partial"
+        else:
+            # Exception Handling: No pending invoice found
+            print(f"[EVENT HANDLER] Exception: No pending invoices found for Student {student_id}. Flagging for manual review.")
+            record_event_transaction(
+                db=db,
+                school_id=school_id,
+                description=f"Exception: Unmatched VA Funding for Student {student_id} [REF:EXC-{transaction_ref}]",
+                event_type="payment.exception",
+                provider="virtual_account",
+                amount=amount,
+                fallback_debit="School Revenue", # Reverse the revenue credit
+                fallback_credit="Unreconciled Funds"
+            )
                 
         db.commit()
         print(f"[EVENT HANDLER] Successfully processed VirtualAccountFunded for Student {student_id}.")

@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from . import models, database
 
-from .api.v1 import auth, fees, schools, students, parents, payments, notifications, reports
+from .api.v1 import auth, invoices, schools, students, parents, payments, notifications, reports, webhooks
 from .api.v1 import erp_academic, erp_hr, erp_inventory, erp_collaboration
-from .api.v1 import virtual_accounts
+from .api.v1 import virtual_accounts, finance
 
 # Create tables
 models.Base.metadata.create_all(bind=database.engine)
@@ -19,9 +19,10 @@ v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(auth.router)
 v1_router.include_router(schools.router)
 v1_router.include_router(students.router)
-v1_router.include_router(fees.router)
+v1_router.include_router(invoices.router)
 v1_router.include_router(parents.router)
 v1_router.include_router(payments.router)
+v1_router.include_router(webhooks.router)
 v1_router.include_router(virtual_accounts.router)
 v1_router.include_router(notifications.router)
 v1_router.include_router(reports.router)
@@ -29,6 +30,7 @@ v1_router.include_router(erp_academic.router)
 v1_router.include_router(erp_hr.router)
 v1_router.include_router(erp_inventory.router)
 v1_router.include_router(erp_collaboration.router)
+v1_router.include_router(finance.router)
 
 app.include_router(v1_router)
 

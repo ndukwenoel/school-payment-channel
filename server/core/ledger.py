@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from ..models import LedgerTransaction, LedgerEntry, LedgerAccount
+from ..models import LedgerTransaction, LedgerEntry, LedgerAccount, PostingRule
 
 def record_transaction(db: Session, school_id: int, description: str, debit_account_name: str, credit_account_name: str, amount: float):
     """
@@ -33,3 +33,30 @@ def record_transaction(db: Session, school_id: int, description: str, debit_acco
     db.add(credit_entry)
     
     return transaction
+
+def record_event_transaction(db: Session, school_id: int, description: str, event_type: str, provider: str, amount: float, fallback_debit: str = "Bank Account", fallback_credit: str = "School Revenue"):
+    """
+    Records a transaction by dynamically resolving the PostingRule.
+    Falls back to provided defaults if no rule is found.
+    """
+    rule = db.query(PostingRule).filter(
+        PostingRule.event_type == event_type,
+        PostingRule.provider == provider,
+        (PostingRule.school_id == school_id) | (PostingRule.school_id == None)
+    ).first()
+    
+    if rule:
+        debit_name = rule.debit_account_name
+        credit_name = rule.credit_account_name
+    else:
+        debit_name = fallback_debit
+        credit_name = fallback_credit
+        
+    return record_transaction(
+        db=db,
+        school_id=school_id,
+        description=description,
+        debit_account_name=debit_name,
+        credit_account_name=credit_name,
+        amount=amount
+    )

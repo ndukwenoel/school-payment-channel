@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../data/payment_repository.dart';
 import '../data/payment_models.dart';
 import '../../dashboard/data/dashboard_repository.dart'; // Student
 import '../../../core/theme.dart';
 
-class FeesListPage extends StatefulWidget {
-  const FeesListPage({super.key});
+class InvoicesListPage extends StatefulWidget {
+  const InvoicesListPage({super.key});
 
   @override
-  State<FeesListPage> createState() => _FeesListPageState();
+  State<InvoicesListPage> createState() => _InvoicesListPageState();
 }
 
-class _FeesListPageState extends State<FeesListPage> {
+class _InvoicesListPageState extends State<InvoicesListPage> {
   bool _loading = true;
   List<Student> _students = [];
-  Map<int, List<Fee>> _fees = {};
-  final Set<int> _processingFees = {}; // Issue 20: Double-submit protection
+  Map<int, List<Invoice>> _invoices = {};
+  final Set<int> _processingInvoices = {};
 
   @override
   void initState() {
@@ -28,17 +29,17 @@ class _FeesListPageState extends State<FeesListPage> {
     try {
       final repo = context.read<PaymentRepository>();
       final students = await repo.getMyStudents();
-      Map<int, List<Fee>> feesMap = {};
+      Map<int, List<Invoice>> invoicesMap = {};
       
       for (var s in students) {
-        final fees = await repo.getStudentFees(s.id);
-        feesMap[s.id] = fees;
+        final invoices = await repo.getStudentInvoices(s.id);
+        invoicesMap[s.id] = invoices;
       }
 
       if (mounted) {
         setState(() {
           _students = students;
-          _fees = feesMap;
+          _invoices = invoicesMap;
           _loading = false;
         });
       }
@@ -50,62 +51,11 @@ class _FeesListPageState extends State<FeesListPage> {
     }
   }
 
-  Future<void> _payFee(Fee fee) async {
-    if (_processingFees.contains(fee.id)) return;
-    
-    setState(() => _processingFees.add(fee.id));
-
-    try {
-      final repo = context.read<PaymentRepository>();
-      await repo.createPaymentIntent(fee.id, fee.amount);
-      
-      if (!mounted) return;
-
-      bool? confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("Confirm Payment"),
-          content: Text("Pay \$${fee.amount} using Mock Card?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false), 
-              child: const Text("Cancel")
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true), 
-              child: const Text("Pay Now")
-            ),
-          ],
-        )
-      );
-
-      if (confirm == true) {
-        await repo.confirmPayment(fee.id, fee.amount, "card");
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text("Payment Successful!"))
-           );
-           _loadData(); 
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Payment Failed: $e"))
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _processingFees.remove(fee.id));
-      }
-    }
-  }
-
   double get _totalOutstanding {
     double total = 0;
-    for (var list in _fees.values) {
-      for (var f in list) {
-        if (f.status != 'paid') total += f.amount;
+    for (var list in _invoices.values) {
+      for (var i in list) {
+        if (i.status != 'paid') total += i.totalAmount;
       }
     }
     return total;
@@ -129,11 +79,11 @@ class _FeesListPageState extends State<FeesListPage> {
               _buildActionGrid(),
               const SizedBox(height: 24),
               const Text(
-                "PENDING FEES",
+                "PENDING INVOICES",
                 style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 0.5),
               ),
               const SizedBox(height: 12),
-              ..._buildFeesList(),
+              ..._buildInvoicesList(),
               const SizedBox(height: 100), // Space for dock
             ],
           ),
@@ -147,7 +97,7 @@ class _FeesListPageState extends State<FeesListPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Row(
-        justifyContent: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const Text(
             "FINANCE PORTAL",
@@ -277,12 +227,12 @@ class _FeesListPageState extends State<FeesListPage> {
     );
   }
 
-  List<Widget> _buildFeesList() {
+  List<Widget> _buildInvoicesList() {
     List<Widget> items = [];
-    for (var list in _fees.values) {
-      for (var fee in list) {
-        if (fee.status == 'paid') continue;
-        items.add(_buildFeeItem(fee));
+    for (var list in _invoices.values) {
+      for (var invoice in list) {
+        if (invoice.status == 'paid') continue;
+        items.add(_buildInvoiceItem(invoice));
         items.add(const SizedBox(height: 8));
       }
     }
@@ -295,10 +245,10 @@ class _FeesListPageState extends State<FeesListPage> {
     return items;
   }
 
-  Widget _buildFeeItem(Fee fee) {
-    bool isDueSoon = fee.dueDate.difference(DateTime.now()).inDays < 7;
+  Widget _buildInvoiceItem(Invoice invoice) {
+    bool isDueSoon = invoice.dueDate.difference(DateTime.now()).inDays < 7;
     return GestureDetector(
-      onTap: () => context.push('/fee-detail', extra: fee),
+      onTap: () => context.push('/invoice-detail', extra: invoice),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -312,10 +262,10 @@ class _FeesListPageState extends State<FeesListPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(fee.title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+                Text(invoice.title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
                 const SizedBox(height: 2),
                 Text(
-                  isDueSoon ? "Due soon" : "Due ${fee.dueDate.month}/${fee.dueDate.day}",
+                  isDueSoon ? "Due soon" : "Due ${invoice.dueDate.month}/${invoice.dueDate.day}",
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
@@ -323,7 +273,7 @@ class _FeesListPageState extends State<FeesListPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text("\$${fee.amount.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+                Text("\$${invoice.totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
                 if (isDueSoon)
                   Container(
                     margin: const EdgeInsets.only(top: 4),
@@ -340,15 +290,15 @@ class _FeesListPageState extends State<FeesListPage> {
   }
 
   Widget _buildPaymentDock() {
-    Fee? firstFee;
-    for (var list in _fees.values) {
+    Invoice? firstInvoice;
+    for (var list in _invoices.values) {
       for (var f in list) {
         if (f.status != 'paid') {
-          firstFee = f;
+          firstInvoice = f;
           break;
         }
       }
-      if (firstFee != null) break;
+      if (firstInvoice != null) break;
     }
 
     return Container(
@@ -362,7 +312,7 @@ class _FeesListPageState extends State<FeesListPage> {
         ),
       ),
       child: ElevatedButton(
-        onPressed: firstFee != null ? () => context.push('/fee-detail', extra: firstFee) : null,
+        onPressed: firstInvoice != null ? () => context.push('/invoice-detail', extra: firstInvoice) : null,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

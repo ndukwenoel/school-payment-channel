@@ -26,43 +26,43 @@ class PaymentRepository {
     }
   }
 
-  // Fee Actions
-  Future<List<Fee>> getStudentFees(int studentId) async {
+  // Invoice Actions
+  Future<List<Invoice>> getStudentInvoices(int studentId) async {
     try {
-      final response = await _apiClient.dio.get('/fees/student/$studentId');
-      return (response.data as List).map((e) => Fee.fromJson(e)).toList();
+      final response = await _apiClient.dio.get('/invoices/student/$studentId');
+      return (response.data as List).map((e) => Invoice.fromJson(e)).toList();
     } catch (e) {
       throw e;
     }
   }
 
   // Payment Actions
-  Future<PaymentIntent> createPaymentIntent(int feeId, double amount) async {
+  Future<PaymentIntent> createPaymentIntent(int invoiceId, double amount) async {
     try {
-      final response = await _apiClient.dio.post('/payments/create-intent', queryParameters: {'fee_id': feeId, 'amount': amount});
+      final response = await _apiClient.dio.post('/payments/create-intent', queryParameters: {'invoice_id': invoiceId, 'amount': amount});
       return PaymentIntent.fromJson(response.data);
     } catch (e) {
       throw e;
     }
   }
 
-  Future<Payment> confirmPayment(int feeId, double amount, String method) async {
+  Future<PaymentAttempt> confirmPayment(int invoiceId, double amount, String method) async {
     try {
       final response = await _apiClient.dio.post('/payments/confirm', data: {
-        'fee_id': feeId,
-        'amount_paid': amount,
-        'payment_method': method
+        'invoice_id': invoiceId,
+        'amount': amount,
+        'provider': method
       });
-      return Payment.fromJson(response.data);
+      return PaymentAttempt.fromJson(response.data);
     } catch (e) {
       throw e;
     }
   }
 
-  Future<List<Payment>> getPaymentHistory() async {
+  Future<List<PaymentAttempt>> getPaymentHistory() async {
      try {
       final response = await _apiClient.dio.get('/payments/history');
-      return (response.data as List).map((e) => Payment.fromJson(e)).toList();
+      return (response.data as List).map((e) => PaymentAttempt.fromJson(e)).toList();
     } catch (e) {
       throw e;
     }

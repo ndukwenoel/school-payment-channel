@@ -3,51 +3,98 @@ import 'package:json_annotation/json_annotation.dart';
 part 'payment_models.g.dart';
 
 @JsonSerializable()
-class Fee {
+class InvoiceLineItem {
   final int id;
+  @JsonKey(name: 'invoice_id')
+  final int invoiceId;
   final String title;
   final double amount;
+
+  InvoiceLineItem({
+    required this.id,
+    required this.invoiceId,
+    required this.title,
+    required this.amount,
+  });
+
+  factory InvoiceLineItem.fromJson(Map<String, dynamic> json) => _$InvoiceLineItemFromJson(json);
+  Map<String, dynamic> toJson() => _$InvoiceLineItemToJson(this);
+}
+
+@JsonSerializable()
+class Invoice {
+  final int id;
+  final String title;
   @JsonKey(name: 'due_date')
   final DateTime dueDate;
   final String status;
   @JsonKey(name: 'student_id')
   final int studentId;
+  @JsonKey(name: 'total_amount', defaultValue: 0.0)
+  final double totalAmount;
+  @JsonKey(name: 'line_items', defaultValue: [])
+  final List<InvoiceLineItem> lineItems;
 
-  Fee({required this.id, required this.title, required this.amount, required this.dueDate, required this.status, required this.studentId});
+  Invoice({
+    required this.id,
+    required this.title,
+    required this.dueDate,
+    required this.status,
+    required this.studentId,
+    required this.totalAmount,
+    required this.lineItems,
+  });
 
-  factory Fee.fromJson(Map<String, dynamic> json) => _$FeeFromJson(json);
-  Map<String, dynamic> toJson() => _$FeeToJson(this);
+  factory Invoice.fromJson(Map<String, dynamic> json) => _$InvoiceFromJson(json);
+  Map<String, dynamic> toJson() => _$InvoiceToJson(this);
 }
 
 @JsonSerializable()
-class Payment {
+class PaymentAttempt {
   final int id;
-  @JsonKey(name: 'fee_id')
-  final int feeId;
-  @JsonKey(name: 'amount_paid')
-  final double amountPaid;
-  @JsonKey(name: 'payment_method')
-  final String paymentMethod;
+  @JsonKey(name: 'invoice_id')
+  final int invoiceId;
+  final double amount;
+  final String provider;
+  final String status;
   @JsonKey(name: 'transaction_id')
-  final String transactionId;
+  final String? transactionId;
   @JsonKey(name: 'payment_date')
   final DateTime paymentDate;
 
-  Payment({required this.id, required this.feeId, required this.amountPaid, required this.paymentMethod, required this.transactionId, required this.paymentDate});
+  PaymentAttempt({
+    required this.id,
+    required this.invoiceId,
+    required this.amount,
+    required this.provider,
+    required this.status,
+    this.transactionId,
+    required this.paymentDate,
+  });
 
-  factory Payment.fromJson(Map<String, dynamic> json) => _$PaymentFromJson(json);
-  Map<String, dynamic> toJson() => _$PaymentToJson(this);
+  factory PaymentAttempt.fromJson(Map<String, dynamic> json) => _$PaymentAttemptFromJson(json);
+  Map<String, dynamic> toJson() => _$PaymentAttemptToJson(this);
 }
 
 @JsonSerializable()
 class PaymentIntent {
+  @JsonKey(name: 'authorization_url')
+  final String? authorizationUrl;
   @JsonKey(name: 'client_secret')
-  final String clientSecret;
+  final String? clientSecret;
+  @JsonKey(name: 'reference')
+  final String? reference;
   @JsonKey(name: 'transaction_id')
-  final String transactionId;
-  final String gateway;
+  final String? transactionId;
+  final String provider;
 
-  PaymentIntent({required this.clientSecret, required this.transactionId, required this.gateway});
+  PaymentIntent({
+    this.authorizationUrl,
+    this.clientSecret,
+    this.reference,
+    this.transactionId,
+    required this.provider,
+  });
 
   factory PaymentIntent.fromJson(Map<String, dynamic> json) => _$PaymentIntentFromJson(json);
   Map<String, dynamic> toJson() => _$PaymentIntentToJson(this);

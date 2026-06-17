@@ -157,8 +157,8 @@ class _DashboardPageState extends State<DashboardPage> {
       runSpacing: 8,
       children: [
         _buildActionBtn(context, "Link Student", Icons.person_add_outlined, '/link-student'),
-        _buildActionBtn(context, "Create Fee", Icons.add_card_outlined, '/create-fee'),
-        _buildActionBtn(context, "All Fees", Icons.list_alt_outlined, '/fees'),
+        _buildActionBtn(context, "Create Invoice", Icons.add_card_outlined, '/create-invoice'),
+        _buildActionBtn(context, "All Invoices", Icons.list_alt_outlined, '/invoices'),
         _buildActionBtn(context, "Notifications", Icons.notifications_none_outlined, '/notifications'),
       ],
     );
