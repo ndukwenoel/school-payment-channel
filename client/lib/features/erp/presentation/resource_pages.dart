@@ -80,7 +80,7 @@ class _ResourceUploadPageState extends State<ResourceUploadPage> {
                 }),
                 decoration: const InputDecoration(labelText: "Resource Type"),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               // Visibility Toggle (Only active if not exam/test)
                DropdownButtonFormField<String>(
                 value: _visibility,
@@ -91,19 +91,19 @@ class _ResourceUploadPageState extends State<ResourceUploadPage> {
                 onChanged: (_type == "exam" || _type == "test") ? null : (v) => setState(() => _visibility = v!),
                 decoration: const InputDecoration(labelText: "Visibility", helperText: "Exams/Tests are strictly Internal"),
               ),
-               const SizedBox(height: 16),
+               SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: "Title"),
                 validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TextFormField(
                 controller: _linkController,
                 decoration: const InputDecoration(labelText: "File Link (Drive/Dropbox etc)"),
                 validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(onPressed: _loading ? null : _upload, style: ElevatedButton.styleFrom(backgroundColor: AppTheme.blueVibrant), child: _loading ? const CircularProgressIndicator() : const Text("SUBMIT FOR REVIEW")),
@@ -133,15 +133,15 @@ class _ResourceReviewPageState extends State<ResourceReviewPage> {
       body: FutureBuilder<List<dynamic>>(
         future: context.read<ErpRepository>().getPendingResources(),
         builder: (context, snapshot) {
-           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+           if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator());
            final items = snapshot.data ?? [];
            
-           if (items.isEmpty) return const Center(child: Text("No pending resources.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5))));
+           if (items.isEmpty) return Center(child: Text("No pending resources.", style: TextStyle(color: AppTheme.textMuted50)));
            
            return ListView.separated(
              padding: const EdgeInsets.all(16),
              itemCount: items.length,
-             separatorBuilder: (_, __) => const SizedBox(height: 12),
+             separatorBuilder: (_, __) => SizedBox(height: 12),
              itemBuilder: (context, index) {
                final item = items[index];
                final isExam = item['type'] == 'exam' || item['type'] == 'test';
@@ -159,15 +159,15 @@ class _ResourceReviewPageState extends State<ResourceReviewPage> {
                            decoration: BoxDecoration(color: isExam ? Colors.redAccent : Colors.teal, borderRadius: BorderRadius.circular(4)),
                            child: Text(item['type'].toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                          ),
-                         const SizedBox(width: 8),
+                         SizedBox(width: 8),
                          if (item['visibility'] == 'internal')
                             const Icon(Icons.lock_outline, size: 14, color: AppTheme.textMuted),
                        ],
                      ),
-                     const SizedBox(height: 8),
+                     SizedBox(height: 8),
                      Text(item['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                      Text(item['file_url'], style: const TextStyle(color: AppTheme.bluePale, fontSize: 12)),
-                     const SizedBox(height: 16),
+                     SizedBox(height: 16),
                      Row(
                        mainAxisAlignment: MainAxisAlignment.end,
                        children: [
@@ -175,7 +175,7 @@ class _ResourceReviewPageState extends State<ResourceReviewPage> {
                            onPressed: () => _updateStatus(item['id'], "rejected"),
                            child: const Text("REJECT", style: TextStyle(color: Colors.redAccent)),
                          ),
-                         const SizedBox(width: 8),
+                         SizedBox(width: 8),
                          ElevatedButton(
                            onPressed: () => _updateStatus(item['id'], "approved"),
                            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.limeLight, foregroundColor: Colors.black),

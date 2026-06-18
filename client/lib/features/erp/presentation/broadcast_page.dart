@@ -67,12 +67,12 @@ class _BroadcastPageState extends State<BroadcastPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text("MASS COMMUNICATION", style: TextStyle(color: AppTheme.limeLight, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               const Text(
                 "Send newsletters, alerts, or event notifications to all registered parents.",
                 style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               DropdownButtonFormField<String>(
                 value: _type,
                 dropdownColor: AppTheme.surfaceLight,
@@ -82,13 +82,13 @@ class _BroadcastPageState extends State<BroadcastPage> {
                 onChanged: (v) => setState(() => _type = v!),
                 decoration: const InputDecoration(labelText: "Broadcast Type"),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: "Subject / Title"),
                 validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TextFormField(
                 controller: _messageController,
                 decoration: const InputDecoration(labelText: "Message Body"),

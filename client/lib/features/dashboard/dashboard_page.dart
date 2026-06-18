@@ -58,7 +58,7 @@ class _DashboardPageState extends State<DashboardPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 5),
+              SizedBox(height: 5),
               Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
             ],
           ),
@@ -75,7 +75,7 @@ class _DashboardPageState extends State<DashboardPage> {
           future: context.read<DashboardRepository>().getStats(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return Center(child: CircularProgressIndicator());
             }
             
             final stats = snapshot.data ?? {
@@ -87,7 +87,7 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(vertical: 16.0),
                     child: Text(
                       "ADMIN CONSOLE",
@@ -95,11 +95,11 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
                   _buildHeroStats(stats),
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32),
                   const Text("RECENT ENROLLMENTS", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, letterSpacing: 1)),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _buildRecentStudents(),
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
                 ],
               ),
             );
@@ -123,13 +123,13 @@ class _DashboardPageState extends State<DashboardPage> {
           Row(
             children: [
               _buildStatItem("STUDENTS", "${stats['total_students']}", AppTheme.blueVibrant),
-              const SizedBox(width: 40),
+              SizedBox(width: 40),
               _buildStatItem("REVENUE", "?${stats['total_revenue']}", AppTheme.limeLight),
             ],
           ),
-          const SizedBox(height: 24),
-          const Divider(color: AppTheme.textMuted.withOpacity(0.1)),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
+          Divider(color: AppTheme.textMuted10),
+          SizedBox(height: 24),
           _buildStatItem("OUTSTANDING", "?${stats['outstanding_fees']}", AppTheme.bluePale, large: true),
         ],
       ),
@@ -140,8 +140,8 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 10, letterSpacing: 1)),
-        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: AppTheme.textMuted50, fontSize: 10, letterSpacing: 1)),
+        SizedBox(height: 4),
         Text(val, style: TextStyle(fontSize: large ? 32 : 24, fontWeight: FontWeight.bold, color: color)),
       ],
     );
@@ -154,10 +154,10 @@ class _DashboardPageState extends State<DashboardPage> {
       future: context.read<DashboardRepository>().getStudents(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: LinearProgressIndicator());
+          return Center(child: LinearProgressIndicator());
         }
         final students = snapshot.data ?? [];
-        if (students.isEmpty) return const Text("No recent students found.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5)));
+        if (students.isEmpty) return const Text("No recent students found.", style: TextStyle(color: AppTheme.textMuted50));
         
         return Column(
           children: students.take(5).map((s) => Container(
@@ -172,8 +172,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: Text(s.fullName[0], style: const TextStyle(color: AppTheme.blueVibrant)),
               ),
               title: Text(s.fullName, style: const TextStyle(fontWeight: FontWeight.w500)),
-              subtitle: Text(s.enrollmentNumber, style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 12)),
-              trailing: const Icon(Icons.chevron_right, color: AppTheme.textMuted.withOpacity(0.1)),
+              subtitle: Text(s.enrollmentNumber, style: const TextStyle(color: AppTheme.textMuted50, fontSize: 12)),
+              trailing: const Icon(Icons.chevron_right, color: AppTheme.textMuted10),
             ),
           )).toList(),
         );

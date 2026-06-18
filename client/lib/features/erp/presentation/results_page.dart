@@ -47,12 +47,12 @@ class _ResultsPageState extends State<ResultsPage> {
         child: Column(
           children: [
             _buildControlRow(),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Expanded(
               child: _loading 
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(child: CircularProgressIndicator())
                 : _report == null 
-                  ? const Center(child: Text("Select criteria and generate report.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5))))
+                  ? Center(child: Text("Select criteria and generate report.", style: TextStyle(color: AppTheme.textMuted50)))
                   : _buildReportView(),
             )
           ],
@@ -82,11 +82,11 @@ class _ResultsPageState extends State<ResultsPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text("REPORT: ${_report!['classroom']}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.limeLight)),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         Expanded(
           child: ListView.separated(
             itemCount: students.length,
-            separatorBuilder: (c, i) => const Divider(color: AppTheme.textMuted.withOpacity(0.1)),
+            separatorBuilder: (c, i) => Divider(color: AppTheme.textMuted10),
             itemBuilder: (context, index) {
               final s = students[index];
               return ListTile(

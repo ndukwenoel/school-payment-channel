@@ -218,7 +218,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
 
   Widget _buildOverviewTab() {
     if (_isLoadingOverview) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator());
     }
 
     final totalExpected = _expectedSettlements?['total_expected'] ?? 0.0;
@@ -230,13 +230,13 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           const Text("LEDGER REVENUE", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           _buildMetricCard("Total Collected Revenue", "?${_totalRevenue.toStringAsFixed(2)}", AppTheme.limeLight),
           
           if (_revenueBreakdowns.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             const Text("Revenue by Category:", style: TextStyle(color: AppTheme.textMuted)),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             ..._revenueBreakdowns.map((b) => ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.pie_chart, color: AppTheme.textMuted),
@@ -245,14 +245,14 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
             )).toList(),
           ],
           
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           const Text("EXPECTED SETTLEMENTS", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           _buildMetricCard("Pending Payouts", "?${totalExpected.toStringAsFixed(2)}", AppTheme.blueVibrant),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           if (providers.isNotEmpty) ...[
             const Text("Breakdown by Provider:", style: TextStyle(color: AppTheme.textMuted)),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             ...providers.entries.map((e) => ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.account_balance_wallet, color: AppTheme.textMuted),
@@ -260,7 +260,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
               trailing: Text("?${e.value.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             )).toList(),
           ] else
-            const Text("No pending provider payouts.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5))),
+            const Text("No pending provider payouts.", style: TextStyle(color: AppTheme.textMuted50)),
         ],
       ),
     );
@@ -278,7 +278,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: const TextStyle(color: AppTheme.textMuted, fontSize: 14)),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(amount, style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: accentColor)),
         ],
       ),
@@ -287,11 +287,11 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
 
   Widget _buildExceptionsTab() {
     if (_isLoadingExceptions) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator());
     }
     
     if (_exceptions.isEmpty) {
-      return const Center(child: Text('No reconciliation exceptions found.'));
+      return Center(child: Text('No reconciliation exceptions found.'));
     }
 
     return RefreshIndicator(
@@ -309,7 +309,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
               subtitle: Text('Unreconciled Amount: ?${exc['amount']}'),
               trailing: ElevatedButton(
                 onPressed: () => _showResolveDialog(exc['id'], exc['description']),
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.blueVibrant, foregroundcolor: AppTheme.textDark),
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.blueVibrant, foregroundColor: AppTheme.textDark),
                 child: const Text('Resolve'),
               ),
             ),
@@ -321,14 +321,14 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
 
   Widget _buildAgingReportTab() {
     if (_isLoadingAging) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator());
     }
 
     final totalOverdue = _agingReport?['total_overdue'] ?? 0.0;
     final List buckets = _agingReport?['buckets'] ?? [];
 
     if (totalOverdue == 0) {
-      return const Center(child: Text("No overdue invoices. Great job!"));
+      return Center(child: Text("No overdue invoices. Great job!"));
     }
 
     return RefreshIndicator(
@@ -337,11 +337,11 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           const Text("AGING DEBT SUMMARY", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           _buildMetricCard("Total Overdue", "?${totalOverdue.toStringAsFixed(2)}", Colors.redAccent),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           const Text("DEBT BY AGE BUCKET", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           ...buckets.map((b) => Card(
             margin: const EdgeInsets.only(bottom: 12),
             child: ListTile(

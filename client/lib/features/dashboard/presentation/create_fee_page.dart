@@ -94,7 +94,7 @@ class _CreateFeePageState extends State<CreateFeePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text("TARGET AUDIENCE", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, letterSpacing: 1)),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(color: AppTheme.surfaceLight, borderRadius: BorderRadius.circular(8)),
                 child: Column(
@@ -116,7 +116,7 @@ class _CreateFeePageState extends State<CreateFeePage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               if (!_isBulk)
                 DropdownButtonFormField<int>(
                   value: _selectedStudentId,
@@ -135,22 +135,22 @@ class _CreateFeePageState extends State<CreateFeePage> {
                   decoration: const InputDecoration(labelText: "Select Class/Grade"),
                   validator: (val) => (val == null || val.isEmpty) && _isBulk ? 'Select a grade' : null,
                 ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: "Fee Title (e.g. Tuition Term 1)"),
                 validator: (val) => val!.isEmpty ? 'Enter title' : null,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TextFormField(
                 controller: _amountController,
                 decoration: const InputDecoration(labelText: "Amount", prefixText: "? "),
                 keyboardType: TextInputType.number,
                 validator: (val) => val!.isEmpty ? 'Enter amount' : null,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               const Text("DEADLINE", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, letterSpacing: 1)),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               GestureDetector(
                 onTap: () async {
                   final picked = await showDatePicker(
@@ -174,9 +174,9 @@ class _CreateFeePageState extends State<CreateFeePage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
+              SizedBox(height: 40),
               _loading 
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(child: CircularProgressIndicator())
                 : ElevatedButton(
                     onPressed: _submit,
                     child: Text(_isBulk ? "GENERATE CLASS FEES" : "CREATE INDIVIDUAL FEE"),

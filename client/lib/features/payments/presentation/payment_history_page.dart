@@ -16,15 +16,15 @@ class PaymentHistoryPage extends StatelessWidget {
         future: context.read<PaymentRepository>().getPaymentHistory(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
              return Center(child: Text("Error: ${snapshot.error}", style: const TextStyle(color: Colors.redAccent)));
           }
           final payments = snapshot.data ?? [];
           if (payments.isEmpty) {
-            return const Center(
-              child: Text("No transaction records found.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5))),
+            return Center(
+              child: Text("No transaction records found.", style: TextStyle(color: AppTheme.textMuted50)),
             );
           }
 
@@ -51,7 +51,7 @@ class PaymentHistoryPage extends StatelessWidget {
                   ),
                   subtitle: Text(
                     "${p.paymentDate.day}/${p.paymentDate.month}/${p.paymentDate.year}",
-                    style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 12),
+                    style: const TextStyle(color: AppTheme.textMuted50, fontSize: 12),
                   ),
                   trailing: Text(
                     "?${p.amountPaid.toStringAsFixed(2)}",

@@ -15,14 +15,14 @@ class PaymentSuccessPage extends StatelessWidget {
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
-              const SizedBox(height: 40),
+              SizedBox(height: 40),
               _buildSuccessIcon(),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               const Text("Payment Processing", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               const Text("Your transaction is being verified", style: TextStyle(fontSize: 14, color: AppTheme.textMuted)),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               _buildReceiptCard(),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
@@ -36,10 +36,10 @@ class PaymentSuccessPage extends StatelessWidget {
               const Spacer(),
               ElevatedButton(
                 onPressed: () {},
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.blueVibrant, foregroundcolor: AppTheme.textDark),
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.blueVibrant, foregroundColor: AppTheme.textDark),
                 child: const Text("Download PDF Receipt"),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               OutlinedButton(
                 onPressed: () => context.go('/invoices'),
                 style: OutlinedButton.styleFrom(
@@ -80,14 +80,14 @@ class PaymentSuccessPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text("PAYMENT BREAKDOWN", style: TextStyle(color: AppTheme.bluePale, fontSize: 11, letterSpacing: 1)),
-              Text("${DateTime.now().month}/${DateTime.now().day}/${DateTime.now().year}", style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 11)),
+              Text("${DateTime.now().month}/${DateTime.now().day}/${DateTime.now().year}", style: const TextStyle(color: AppTheme.textMuted50, fontSize: 11)),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           _buildReceiptRow(invoice.title, invoice.totalAmount),
-          const SizedBox(height: 16),
-          const Divider(color: AppTheme.textMuted.withOpacity(0.1)),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
+          Divider(color: AppTheme.textMuted10),
+          SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

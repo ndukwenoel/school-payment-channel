@@ -48,9 +48,9 @@ class _PayrollPageState extends State<PayrollPage> {
         child: Column(
           children: [
             _buildControlCard(),
-            const SizedBox(height: 32),
+            SizedBox(height: 32),
             const Expanded(
-              child: Center(child: Text("Payroll History (Coming Soon)", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5)))),
+              child: Center(child: Text("Payroll History (Coming Soon)", style: TextStyle(color: AppTheme.textMuted50))),
             )
           ],
         ),
@@ -70,9 +70,9 @@ class _PayrollPageState extends State<PayrollPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text("AUTOMATED PAYROLL", style: TextStyle(color: AppTheme.bluePale, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           const Text("Generate payroll for all active staff based on their current designation profile.", style: TextStyle(color: AppTheme.textMuted)),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Row(
             children: [
               DropdownButton<String>(
@@ -83,11 +83,11 @@ class _PayrollPageState extends State<PayrollPage> {
                 ).toList(),
                 onChanged: (v) => setState(() => _month = v!),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Text("$_year", style: const TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.bold)),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(

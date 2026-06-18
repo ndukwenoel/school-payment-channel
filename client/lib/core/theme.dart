@@ -9,11 +9,11 @@ class AppTheme {
   static const Color sageGreen = Color(0xFF8A9A5B); // Sage green
   static const Color sageGreenLight = Color(0xFFE3EAD8); // Very light sage green for cards/highlights
   
-  // Accents and Text
-  static const Color textDark = Color(0xFF2D3748);
-  static const Color textMuted = Color(0xFF718096);
-  static const Color textMuted50 = Color(0x80718096);
-  static const Color textMuted10 = Color(0x1A718096);
+  // Accents and Text (Shades of Black and White)
+  static const Color textDark = Color(0xFF111111); // Near black
+  static const Color textMuted = Color(0xFF666666); // Mid grey
+  static const Color textMuted50 = Color(0x80666666);
+  static const Color textMuted10 = Color(0x1A666666);
   static const Color white = Colors.white;
   static const Color cardBackground = Colors.white;
 
@@ -23,6 +23,7 @@ class AppTheme {
   static const Color blueVibrant = sageGreen;
   static const Color limeLight = sageGreenLight;
   static const Color bluePale = sageGreenLight;
+  static const Color greenDeep = sageGreen;
 
   static ThemeData get lightTheme {
     return ThemeData.light().copyWith(
@@ -52,7 +53,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: sageGreen,
-          foregroundcolor: AppTheme.textDark,
+          foregroundColor: AppTheme.textDark,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           textStyle: _textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),

@@ -12,9 +12,9 @@ class StudentImportPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
              const Icon(Icons.upload_file, size: 64, color: Colors.grey),
-             const SizedBox(height: 16),
+             SizedBox(height: 16),
              const Text("CSV Upload Feature Coming Soon"),
-             const SizedBox(height: 16),
+             SizedBox(height: 16),
              ElevatedButton(onPressed: () {}, child: const Text("Select File"))
           ],
         ),

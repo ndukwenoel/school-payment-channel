@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'auth_bloc.dart';
@@ -38,10 +39,10 @@ class _RegisterPageState extends State<RegisterPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                   const Icon(Icons.person_add_outlined, size: 64, color: Color(0xFFA7F3D0)),
-                   const SizedBox(height: 16),
-                   const Text("JOIN CHANNEL", style: TextStyle(color: AppTheme.textDark, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                   const SizedBox(height: 32),
+                   Icon(Icons.person_add_outlined, size: 64, color: Color(0xFFA7F3D0)),
+                   SizedBox(height: 16),
+                   Text("JOIN CHANNEL", style: TextStyle(color: AppTheme.textDark, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                   SizedBox(height: 32),
                    Container(
                      constraints: const BoxConstraints(maxWidth: 400),
                      padding: const EdgeInsets.all(24),
@@ -57,20 +58,20 @@ class _RegisterPageState extends State<RegisterPage> {
                           decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person_outline)),
                           validator: (value) => value!.isEmpty ? 'Enter name' : null,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         TextFormField(
                           controller: _emailController,
                           decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
                           validator: (value) => value!.isEmpty ? 'Enter email' : null,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         TextFormField(
                           controller: _passwordController,
                           decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
                           obscureText: true,
                           validator: (value) => value!.isEmpty ? 'Enter password' : null,
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
                           child: BlocBuilder<AuthBloc, AuthState>(
@@ -89,20 +90,20 @@ class _RegisterPageState extends State<RegisterPage> {
                                       }
                                     },
                                 child: state is AuthLoading 
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       width: 20, 
                                       height: 20, 
                                       child: CircularProgressIndicator(strokeWidth: 2)
                                     )
-                                  : const Text('Register'),
+                                  : Text('Register'),
                               );
                             },
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         TextButton(
                           onPressed: () => context.pop(),
-                          child: const Text("Already have an account? Login"),
+                          child: Text("Already have an account? Login"),
                         )
                        ],
                      ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'auth_bloc.dart';
@@ -36,11 +37,11 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                   const Icon(Icons.blur_on, size: 80, color: Color(0xFF4354FF)),
-                   const SizedBox(height: 20),
+                   Icon(Icons.blur_on, size: 80, color: Color(0xFF4354FF)),
+                   SizedBox(height: 20),
                    Text("CHANNEL", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppTheme.textDark, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                   const Text("PORTAL ACCESS", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 4)),
-                   const SizedBox(height: 48),
+                   Text("PORTAL ACCESS", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 4)),
+                   SizedBox(height: 48),
                    Container(
                      constraints: const BoxConstraints(maxWidth: 400),
                      padding: const EdgeInsets.all(24),
@@ -60,7 +61,7 @@ class _LoginPageState extends State<LoginPage> {
                            keyboardType: TextInputType.emailAddress,
                            validator: (val) => val!.isEmpty ? 'Enter email' : null,
                          ),
-                         const SizedBox(height: 16),
+                         SizedBox(height: 16),
                          TextFormField(
                            controller: _passwordController,
                            decoration: const InputDecoration(
@@ -70,7 +71,7 @@ class _LoginPageState extends State<LoginPage> {
                            obscureText: true,
                            validator: (val) => val!.isEmpty ? 'Enter password' : null,
                          ),
-                         const SizedBox(height: 24),
+                         SizedBox(height: 24),
                          SizedBox(
                            width: double.infinity,
                            child: BlocBuilder<AuthBloc, AuthState>(
@@ -83,15 +84,15 @@ class _LoginPageState extends State<LoginPage> {
                                        context.read<AuthBloc>().add(AuthLogin(_emailController.text, _passwordController.text));
                                      }
                                   },
-                                 child: state is AuthLoading ? const CircularProgressIndicator() : const Text("Login"),
+                                 child: state is AuthLoading ? const CircularProgressIndicator() : Text("Login"),
                                );
                              },
                            ),
                          ),
-                         const SizedBox(height: 16),
+                         SizedBox(height: 16),
                          TextButton(
                            onPressed: () => context.push('/register'),
-                           child: const Text("Don't have an account? Register"),
+                           child: Text("Don't have an account? Register"),
                          )
                        ],
                      ),

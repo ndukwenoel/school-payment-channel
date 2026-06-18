@@ -46,7 +46,7 @@ class _LinkStudentPageState extends State<LinkStudentPage> {
               "Please enter the enrollment number assigned by the school to link your account.",
               style: TextStyle(color: AppTheme.textMuted, fontSize: 14),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: 32),
             TextField(
               controller: _enrollmentController,
               decoration: const InputDecoration(
@@ -54,9 +54,9 @@ class _LinkStudentPageState extends State<LinkStudentPage> {
                 prefixIcon: Icon(Icons.badge_outlined),
               ),
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
             _loading 
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator())
               : ElevatedButton(
                   onPressed: _linkStudent,
                   child: const Text("INITIALIZE LINKING"),

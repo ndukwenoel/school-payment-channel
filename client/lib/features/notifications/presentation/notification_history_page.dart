@@ -16,15 +16,15 @@ class NotificationHistoryPage extends StatelessWidget {
         future: context.read<NotificationRepository>().getHistory(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-             return const Center(child: CircularProgressIndicator());
+             return Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
              return Center(child: Text("Error: ${snapshot.error}", style: const TextStyle(color: Colors.redAccent)));
           }
           final logs = snapshot.data ?? [];
           if (logs.isEmpty) {
-            return const Center(
-              child: Text("No records available.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5))),
+            return Center(
+              child: Text("No records available.", style: TextStyle(color: AppTheme.textMuted50)),
             );
           }
 
@@ -48,7 +48,7 @@ class NotificationHistoryPage extends StatelessWidget {
                   title: Text(log.subject, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   subtitle: Text(
                     "To: ${log.recipientEmail}\n${log.sentAt.day}/${log.sentAt.month} ${log.sentAt.hour}:${log.sentAt.minute}",
-                    style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 12),
+                    style: const TextStyle(color: AppTheme.textMuted50, fontSize: 12),
                   ),
                   isThreeLine: true,
                   trailing: Container(

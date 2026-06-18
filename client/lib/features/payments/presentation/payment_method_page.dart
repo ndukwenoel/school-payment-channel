@@ -83,11 +83,11 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildNavHeader(context),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               _buildSectionLabel("SUPPORTED METHODS"),
               _buildMethodOption("Paystack Checkout", "Card, Bank Transfer, USSD", Icons.credit_card, Colors.blueAccent),
               _buildMethodOption("Offline Bank Transfer", "Manual Verification", Icons.account_balance, AppTheme.greenDeep),
-              const SizedBox(height: 100),
+              SizedBox(height: 100),
             ],
           ),
         ),
@@ -103,7 +103,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
           onTap: () => context.pop(),
           child: const Icon(Icons.arrow_back_ios_new, size: 14, color: AppTheme.textDark),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: 16),
         const Text("PAYMENT METHOD", style: TextStyle(color: AppTheme.textMuted, fontSize: 13, letterSpacing: 0.5)),
       ],
     );
@@ -136,7 +136,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
               decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(4)),
               child: Icon(icon, color: iconTextColor ?? Colors.white, size: 18),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,12 +175,12 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text("🔒 SECURE 256-BIT SSL ENCRYPTION", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 10, letterSpacing: 1)),
-          const SizedBox(height: 12),
+          const Text("🔒 SECURE 256-BIT SSL ENCRYPTION", style: TextStyle(color: AppTheme.textMuted50, fontSize: 10, letterSpacing: 1)),
+          SizedBox(height: 12),
           ElevatedButton(
             onPressed: _isLoading ? null : _handlePayment,
             child: _isLoading 
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.textDark))
+              ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.textDark))
               : Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -188,7 +188,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                 Row(
                   children: [
                     Text("?${widget.invoice.totalAmount.toStringAsFixed(2)}"),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     const Icon(Icons.arrow_forward_ios, size: 14),
                   ],
                 ),

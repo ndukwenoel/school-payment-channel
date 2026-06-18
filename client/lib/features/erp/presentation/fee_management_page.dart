@@ -56,31 +56,31 @@ class _FeeManagementPageState extends State<FeeManagementPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text("CREATE NEW FEE", style: TextStyle(color: AppTheme.limeLight, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               const Text(
                 "Push a new fee requirement to all students in a specific grade. Parents will be notified immediately.",
                 style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: "Fee Title (e.g. Term 2 Exam Fee)"),
                 validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TextFormField(
                 controller: _amountController,
                 decoration: const InputDecoration(labelText: "Amount (?)"),
                 keyboardType: TextInputType.number,
                 validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TextFormField(
                 controller: _gradeController,
                 decoration: const InputDecoration(labelText: "Target Grade (e.g. Grade 10)"),
                 validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               Row(
                 children: [
                   Text("Due Date: ${_dueDate.toLocal().toString().split(' ')[0]}", style: const TextStyle(color: AppTheme.textMuted)),

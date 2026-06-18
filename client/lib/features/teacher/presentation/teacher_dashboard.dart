@@ -58,7 +58,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         child: Column(
           children: [
             _buildSyncCard(),
-            const SizedBox(height: 32),
+            SizedBox(height: 32),
             _buildActionGrid(),
           ],
         ),
@@ -81,7 +81,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             size: 32,
             color: _queueSize > 0 ? Colors.orangeAccent : Colors.greenAccent,
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,7 +103,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           if (_queueSize > 0)
             ElevatedButton(
               onPressed: _syncing ? null : _syncNow,
-              child: _syncing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("SYNC"),
+              child: _syncing ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("SYNC"),
             )
         ],
       ),
@@ -133,13 +133,13 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         decoration: BoxDecoration(
           color: AppTheme.surfaceLight,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.textMuted.withOpacity(0.1)),
+          border: Border.all(color: AppTheme.textMuted10),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 32, color: AppTheme.blueVibrant),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
           ],
         ),

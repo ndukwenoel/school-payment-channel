@@ -18,11 +18,11 @@ class OfficeDashboardPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               _buildModuleGrid(context),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               _buildSectionTitle("INVENTORY ALERTS"),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               _buildInventoryAlerts(context),
             ],
           ),
@@ -39,17 +39,17 @@ class OfficeDashboardPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text("OFFICE SUITE", style: TextStyle(color: AppTheme.limeLight, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 2)),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             const Text("Admin Control", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           ],
         ),
-        const Icon(Icons.settings_outlined, color: AppTheme.textMuted.withOpacity(0.5)),
+        const Icon(Icons.settings_outlined, color: AppTheme.textMuted50),
       ],
     );
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(title, style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1));
+    return Text(title, style: const TextStyle(color: AppTheme.textMuted50, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1));
   }
 
   Widget _buildModuleGrid(BuildContext context) {
@@ -89,7 +89,7 @@ class OfficeDashboardPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: accent, size: 28),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
           ],
         ),
@@ -101,11 +101,11 @@ class OfficeDashboardPage extends StatelessWidget {
     return FutureBuilder<List<dynamic>>(
       future: context.read<ErpRepository>().getInventory(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+        if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator());
         final items = snapshot.data ?? [];
         final lowStock = items.where((i) => i['quantity'] < 10).toList();
 
-        if (lowStock.isEmpty) return const Text("Inventory healthy.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5)));
+        if (lowStock.isEmpty) return const Text("Inventory healthy.", style: TextStyle(color: AppTheme.textMuted50));
 
         return Column(
           children: lowStock.map((item) => Container(

@@ -24,18 +24,18 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildNavHeader(context),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               _buildHeroDetail(),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               _buildSectionLabel("COMPONENT BREAKDOWN"),
               _buildBreakdownCard(),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               _buildSectionLabel("PAYMENT DEADLINE"),
               _buildCalendarStrip(),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               _buildSectionLabel("PAYMENT OPTIONS"),
               _buildPaymentOptions(),
-              const SizedBox(height: 100),
+              SizedBox(height: 100),
             ],
           ),
         ),
@@ -56,7 +56,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             child: const Icon(Icons.arrow_back_ios_new, size: 14, color: AppTheme.textDark),
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: 16),
         const Text("INVOICE DETAILS", style: TextStyle(color: AppTheme.textMuted, fontSize: 13, letterSpacing: 0.5)),
       ],
     );
@@ -75,9 +75,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text("CURRENT BALANCE DUE", style: TextStyle(color: AppTheme.limeLight, fontSize: 11, letterSpacing: 0.5)),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(widget.invoice.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text("?${widget.invoice.totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w500)),
         ],
       ),
@@ -148,7 +148,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     return Column(
       children: [
         _buildOptionCard("Pay in Full", "One-time payment of ?${widget.invoice.totalAmount.toStringAsFixed(2)}", true),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         _buildOptionCard("Installment Plan", "4 payments of ?${(widget.invoice.totalAmount / 4).toStringAsFixed(2)} / mo", false),
       ],
     );
@@ -173,7 +173,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppTheme.blueVibrant, width: 2)),
               child: selected ? Center(child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppTheme.blueVibrant, shape: BoxShape.circle))) : null,
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -207,7 +207,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             Row(
               children: [
                 Text("?${widget.invoice.totalAmount.toStringAsFixed(2)}"),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 const Icon(Icons.arrow_forward_ios, size: 14),
               ],
             ),

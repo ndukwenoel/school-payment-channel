@@ -43,7 +43,7 @@ class _MainLayoutState extends State<MainLayout> {
     final selectedIndex = _getSelectedIndex(location);
 
     return Scaffold(
-      backgroundcolor: AppTheme.textDark,
+      backgroundColor: AppTheme.textDark,
       body: Row(
         children: [
           _buildSidebar(selectedIndex),
@@ -75,16 +75,16 @@ class _MainLayoutState extends State<MainLayout> {
           Row(
             children: [
               const Icon(Icons.school, color: AppTheme.sageGreen, size: 36),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Text("CHANNEL", style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold, letterSpacing: 2, color: AppTheme.sageGreen
               )),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           const Text(" ERP SYSTEM", style: TextStyle(color: AppTheme.textMuted, fontSize: 10, letterSpacing: 3)),
           
-          const SizedBox(height: 32),
+          SizedBox(height: 32),
           
           Expanded(
             child: SingleChildScrollView(
@@ -92,21 +92,21 @@ class _MainLayoutState extends State<MainLayout> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text("CORE", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _NavItem(icon: Icons.dashboard_customize, label: "Overview", isSelected: selectedIndex == 0, onTap: () => _onItemTapped(0)),
                   _NavItem(icon: Icons.account_balance, label: "Finance & Settlement", isSelected: selectedIndex == 1, onTap: () => _onItemTapped(1)),
                   _NavItem(icon: Icons.payments, label: "Fee Management", isSelected: selectedIndex == 2, onTap: () => _onItemTapped(2)),
                   _NavItem(icon: Icons.receipt_long, label: "Invoices", isSelected: selectedIndex == 3, onTap: () => _onItemTapped(3)),
                   
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32),
                   const Text("ACADEMIC", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _NavItem(icon: Icons.menu_book, label: "Academics", isSelected: selectedIndex == 4, onTap: () => _onItemTapped(4)),
                   _NavItem(icon: Icons.workspace_premium, label: "Results & Grades", isSelected: selectedIndex == 5, onTap: () => _onItemTapped(5)),
 
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32),
                   const Text("ADMIN", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _NavItem(icon: Icons.badge, label: "HR & Payroll", isSelected: selectedIndex == 6, onTap: () => _onItemTapped(6)),
                   _NavItem(icon: Icons.campaign, label: "Broadcasts", isSelected: selectedIndex == 7, onTap: () => _onItemTapped(7)),
                 ],
@@ -114,9 +114,9 @@ class _MainLayoutState extends State<MainLayout> {
             ),
           ),
 
-          const SizedBox(height: 16),
-          const Divider(color: AppTheme.sageGreenLight),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
+          Divider(color: AppTheme.sageGreenLight),
+          SizedBox(height: 16),
           // User profile snippet
           Row(
             children: [
@@ -125,7 +125,7 @@ class _MainLayoutState extends State<MainLayout> {
                 radius: 18,
                 child: const Text("AD", style: TextStyle(color: AppTheme.sageGreen, fontWeight: FontWeight.bold, fontSize: 12)),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,7 +183,7 @@ class _NavItem extends StatelessWidget {
               size: 20,
               color: isSelected ? AppTheme.sageGreen : AppTheme.textMuted,
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Text(
               label,
               style: TextStyle(
