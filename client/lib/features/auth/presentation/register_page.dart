@@ -40,7 +40,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 children: [
                    const Icon(Icons.person_add_outlined, size: 64, color: Color(0xFFA7F3D0)),
                    const SizedBox(height: 16),
-                   const Text("JOIN CHANNEL", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                   const Text("JOIN CHANNEL", style: TextStyle(color: AppTheme.textDark, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2)),
                    const SizedBox(height: 32),
                    Container(
                      constraints: const BoxConstraints(maxWidth: 400),

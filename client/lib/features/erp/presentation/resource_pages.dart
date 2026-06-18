@@ -44,7 +44,7 @@ class _ResourceUploadPageState extends State<ResourceUploadPage> {
     } catch (e) {
       if (e is OfflineQueuedException && mounted) {
            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-             content: Text("No Network. Resource saved offline.", style: TextStyle(color: Colors.white)),
+             content: Text("No Network. Resource saved offline.", style: TextStyle(color: AppTheme.textDark)),
              backgroundColor: Colors.orange,
            ));
            context.pop(); // Close page as if successful
@@ -71,7 +71,7 @@ class _ResourceUploadPageState extends State<ResourceUploadPage> {
                 value: _type,
                 dropdownColor: AppTheme.surfaceLight,
                 items: ["note", "exam", "test"].map((t) => 
-                  DropdownMenuItem(value: t, child: Text(t.toUpperCase(), style: const TextStyle(color: Colors.white)))
+                  DropdownMenuItem(value: t, child: Text(t.toUpperCase(), style: const TextStyle(color: AppTheme.textDark)))
                 ).toList(),
                 onChanged: (v) => setState(() {
                   _type = v!;
@@ -86,7 +86,7 @@ class _ResourceUploadPageState extends State<ResourceUploadPage> {
                 value: _visibility,
                 dropdownColor: AppTheme.surfaceLight,
                 items: ["internal", "public"].map((t) => 
-                  DropdownMenuItem(value: t, child: Text(t.toUpperCase(), style: const TextStyle(color: Colors.white)))
+                  DropdownMenuItem(value: t, child: Text(t.toUpperCase(), style: const TextStyle(color: AppTheme.textDark)))
                 ).toList(),
                 onChanged: (_type == "exam" || _type == "test") ? null : (v) => setState(() => _visibility = v!),
                 decoration: const InputDecoration(labelText: "Visibility", helperText: "Exams/Tests are strictly Internal"),
@@ -136,7 +136,7 @@ class _ResourceReviewPageState extends State<ResourceReviewPage> {
            if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
            final items = snapshot.data ?? [];
            
-           if (items.isEmpty) return const Center(child: Text("No pending resources.", style: TextStyle(color: Colors.white38)));
+           if (items.isEmpty) return const Center(child: Text("No pending resources.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5))));
            
            return ListView.separated(
              padding: const EdgeInsets.all(16),
@@ -161,7 +161,7 @@ class _ResourceReviewPageState extends State<ResourceReviewPage> {
                          ),
                          const SizedBox(width: 8),
                          if (item['visibility'] == 'internal')
-                            const Icon(Icons.lock_outline, size: 14, color: Colors.white54),
+                            const Icon(Icons.lock_outline, size: 14, color: AppTheme.textMuted),
                        ],
                      ),
                      const SizedBox(height: 8),

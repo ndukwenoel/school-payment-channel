@@ -19,7 +19,7 @@ class PaymentSuccessPage extends StatelessWidget {
               _buildSuccessIcon(),
               const SizedBox(height: 24),
               const Text("Payment Processing", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              const Text("Your transaction is being verified", style: TextStyle(fontSize: 14, color: Colors.white70)),
+              const Text("Your transaction is being verified", style: TextStyle(fontSize: 14, color: AppTheme.textMuted)),
               const SizedBox(height: 32),
               _buildReceiptCard(),
               const SizedBox(height: 24),
@@ -29,14 +29,14 @@ class PaymentSuccessPage extends StatelessWidget {
                 decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(4)),
                 child: const Text(
                   "Verification can take up to 2 minutes.",
-                  style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.white70),
+                  style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: AppTheme.textMuted),
                   textAlign: TextAlign.center,
                 ),
               ),
               const Spacer(),
               ElevatedButton(
                 onPressed: () {},
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.blueVibrant, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.blueVibrant, foregroundcolor: AppTheme.textDark),
                 child: const Text("Download PDF Receipt"),
               ),
               const SizedBox(height: 12),
@@ -47,7 +47,7 @@ class PaymentSuccessPage extends StatelessWidget {
                   side: const BorderSide(color: Colors.white24),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text("Return to Dashboard", style: TextStyle(color: Colors.white)),
+                child: const Text("Return to Dashboard", style: TextStyle(color: AppTheme.textDark)),
               ),
             ],
           ),
@@ -80,19 +80,19 @@ class PaymentSuccessPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text("PAYMENT BREAKDOWN", style: TextStyle(color: AppTheme.bluePale, fontSize: 11, letterSpacing: 1)),
-              Text("${DateTime.now().month}/${DateTime.now().day}/${DateTime.now().year}", style: const TextStyle(color: Colors.white38, fontSize: 11)),
+              Text("${DateTime.now().month}/${DateTime.now().day}/${DateTime.now().year}", style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 11)),
             ],
           ),
           const SizedBox(height: 24),
           _buildReceiptRow(invoice.title, invoice.totalAmount),
           const SizedBox(height: 16),
-          const Divider(color: Colors.white10),
+          const Divider(color: AppTheme.textMuted.withOpacity(0.1)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text("Total Paid", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              Text("\$${invoice.totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.limeLight)),
+              Text("?${invoice.totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.limeLight)),
             ],
           )
         ],
@@ -106,8 +106,8 @@ class PaymentSuccessPage extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-          Text("\$${val.toStringAsFixed(2)}", style: const TextStyle(fontSize: 14)),
+          Text(label, style: const TextStyle(color: AppTheme.textMuted, fontSize: 14)),
+          Text("?${val.toStringAsFixed(2)}", style: const TextStyle(fontSize: 14)),
         ],
       ),
     );

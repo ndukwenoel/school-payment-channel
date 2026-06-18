@@ -24,7 +24,7 @@ class PaymentHistoryPage extends StatelessWidget {
           final payments = snapshot.data ?? [];
           if (payments.isEmpty) {
             return const Center(
-              child: Text("No transaction records found.", style: TextStyle(color: Colors.white38)),
+              child: Text("No transaction records found.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5))),
             );
           }
 
@@ -51,10 +51,10 @@ class PaymentHistoryPage extends StatelessWidget {
                   ),
                   subtitle: Text(
                     "${p.paymentDate.day}/${p.paymentDate.month}/${p.paymentDate.year}",
-                    style: const TextStyle(color: Colors.white38, fontSize: 12),
+                    style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 12),
                   ),
                   trailing: Text(
-                    "\$${p.amountPaid.toStringAsFixed(2)}",
+                    "?${p.amountPaid.toStringAsFixed(2)}",
                     style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.limeLight, fontSize: 16),
                   ),
                 ),

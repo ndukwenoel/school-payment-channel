@@ -95,7 +95,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 ),
                 Text(
                   _queueSize > 0 ? "Connect to internet to sync." : "You are up to date.",
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
                 ),
               ],
             ),
@@ -133,7 +133,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         decoration: BoxDecoration(
           color: AppTheme.surfaceLight,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white10),
+          border: Border.all(color: AppTheme.textMuted.withOpacity(0.1)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

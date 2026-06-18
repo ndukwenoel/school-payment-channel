@@ -80,7 +80,7 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
               const SizedBox(height: 24),
               const Text(
                 "PENDING INVOICES",
-                style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 0.5),
+                style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 0.5),
               ),
               const SizedBox(height: 12),
               ..._buildInvoicesList(),
@@ -101,7 +101,7 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
         children: [
           const Text(
             "FINANCE PORTAL",
-            style: TextStyle(color: Colors.white70, fontSize: 14, letterSpacing: 0.5),
+            style: TextStyle(color: AppTheme.textMuted, fontSize: 14, letterSpacing: 0.5),
           ),
           CircleAvatar(
             radius: 16,
@@ -135,13 +135,13 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            "\$${_totalOutstanding.toStringAsFixed(2)}",
+            "?${_totalOutstanding.toStringAsFixed(2)}",
             style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           const Text(
             "Due by Next Month",
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(color: AppTheme.textMuted, fontSize: 14),
           ),
           const SizedBox(height: 24),
           Row(
@@ -238,7 +238,7 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
     if (items.isEmpty) {
       items.add(const Padding(
         padding: EdgeInsets.symmetric(vertical: 40.0),
-        child: Center(child: Text("All caught up!", style: TextStyle(color: Colors.white70))),
+        child: Center(child: Text("All caught up!", style: TextStyle(color: AppTheme.textMuted))),
       ));
     }
     return items;
@@ -265,14 +265,14 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
                 const SizedBox(height: 2),
                 Text(
                   isDueSoon ? "Due soon" : "Due ${invoice.dueDate.month}/${invoice.dueDate.day}",
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
                 ),
               ],
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text("\$${invoice.totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+                Text("?${invoice.totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
                 if (isDueSoon)
                   Container(
                     margin: const EdgeInsets.only(top: 4),
@@ -318,7 +318,7 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
             const Text("Pay Total"),
             Row(
               children: [
-                Text("\$${_totalOutstanding.toStringAsFixed(2)}"),
+                Text("?${_totalOutstanding.toStringAsFixed(2)}"),
                 const SizedBox(width: 8),
                 const Icon(Icons.arrow_forward_ios, size: 14),
               ],

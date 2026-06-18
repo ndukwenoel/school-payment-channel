@@ -48,14 +48,14 @@ class AcademicDashboardPage extends StatelessWidget {
         CircleAvatar(
           radius: 20,
           backgroundColor: AppTheme.surfaceLight,
-          child: const Icon(Icons.person_3_outlined, color: Colors.white),
+          child: const Icon(Icons.person_3_outlined, color: AppTheme.textDark),
         )
       ],
     );
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(title, style: const TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1));
+    return Text(title, style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1));
   }
 
   Widget _buildQuickStats(BuildContext context) {
@@ -91,7 +91,7 @@ class AcademicDashboardPage extends StatelessWidget {
           Icon(icon, color: AppTheme.limeLight, size: 20),
           const SizedBox(height: 12),
           Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+          Text(label, style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 12)),
         ],
       ),
     );
@@ -103,7 +103,7 @@ class AcademicDashboardPage extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
         final rooms = snapshot.data ?? [];
-        if (rooms.isEmpty) return const Text("No classrooms assigned.", style: TextStyle(color: Colors.white38));
+        if (rooms.isEmpty) return const Text("No classrooms assigned.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5)));
 
         return ListView.builder(
           shrinkWrap: true,
@@ -125,7 +125,7 @@ class AcademicDashboardPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(room['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text("Section ${room['section']}", style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                      Text("Section ${room['section']}", style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 12)),
                     ],
                   ),
                   const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 16),

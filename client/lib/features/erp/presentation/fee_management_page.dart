@@ -59,7 +59,7 @@ class _FeeManagementPageState extends State<FeeManagementPage> {
               const SizedBox(height: 8),
               const Text(
                 "Push a new fee requirement to all students in a specific grade. Parents will be notified immediately.",
-                style: TextStyle(color: Colors.white54, fontSize: 13),
+                style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
               ),
               const SizedBox(height: 32),
               TextFormField(
@@ -70,7 +70,7 @@ class _FeeManagementPageState extends State<FeeManagementPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _amountController,
-                decoration: const InputDecoration(labelText: "Amount (\$)"),
+                decoration: const InputDecoration(labelText: "Amount (?)"),
                 keyboardType: TextInputType.number,
                 validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
@@ -83,7 +83,7 @@ class _FeeManagementPageState extends State<FeeManagementPage> {
               const SizedBox(height: 24),
               Row(
                 children: [
-                  Text("Due Date: ${_dueDate.toLocal().toString().split(' ')[0]}", style: const TextStyle(color: Colors.white70)),
+                  Text("Due Date: ${_dueDate.toLocal().toString().split(' ')[0]}", style: const TextStyle(color: AppTheme.textMuted)),
                   const Spacer(),
                   TextButton(
                     onPressed: () async {

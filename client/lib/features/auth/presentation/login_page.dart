@@ -38,8 +38,8 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                    const Icon(Icons.blur_on, size: 80, color: Color(0xFF4354FF)),
                    const SizedBox(height: 20),
-                   Text("CHANNEL", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                   const Text("PORTAL ACCESS", style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 4)),
+                   Text("CHANNEL", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppTheme.textDark, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                   const Text("PORTAL ACCESS", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 4)),
                    const SizedBox(height: 48),
                    Container(
                      constraints: const BoxConstraints(maxWidth: 400),

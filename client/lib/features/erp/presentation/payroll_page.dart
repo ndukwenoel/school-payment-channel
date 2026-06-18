@@ -50,7 +50,7 @@ class _PayrollPageState extends State<PayrollPage> {
             _buildControlCard(),
             const SizedBox(height: 32),
             const Expanded(
-              child: Center(child: Text("Payroll History (Coming Soon)", style: TextStyle(color: Colors.white38))),
+              child: Center(child: Text("Payroll History (Coming Soon)", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5)))),
             )
           ],
         ),
@@ -71,7 +71,7 @@ class _PayrollPageState extends State<PayrollPage> {
         children: [
           const Text("AUTOMATED PAYROLL", style: TextStyle(color: AppTheme.bluePale, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          const Text("Generate payroll for all active staff based on their current designation profile.", style: TextStyle(color: Colors.white70)),
+          const Text("Generate payroll for all active staff based on their current designation profile.", style: TextStyle(color: AppTheme.textMuted)),
           const SizedBox(height: 24),
           Row(
             children: [
@@ -79,12 +79,12 @@ class _PayrollPageState extends State<PayrollPage> {
                 value: _month,
                 dropdownColor: AppTheme.surfaceLight,
                 items: ["January", "February", "March", "April", "May"].map((m) => 
-                  DropdownMenuItem(value: m, child: Text(m, style: const TextStyle(color: Colors.white)))
+                  DropdownMenuItem(value: m, child: Text(m, style: const TextStyle(color: AppTheme.textDark)))
                 ).toList(),
                 onChanged: (v) => setState(() => _month = v!),
               ),
               const SizedBox(width: 16),
-              Text("$_year", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Text("$_year", style: const TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 24),

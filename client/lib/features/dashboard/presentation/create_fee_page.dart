@@ -93,7 +93,7 @@ class _CreateFeePageState extends State<CreateFeePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("TARGET AUDIENCE", style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1)),
+              const Text("TARGET AUDIENCE", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, letterSpacing: 1)),
               const SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(color: AppTheme.surfaceLight, borderRadius: BorderRadius.circular(8)),
@@ -144,12 +144,12 @@ class _CreateFeePageState extends State<CreateFeePage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _amountController,
-                decoration: const InputDecoration(labelText: "Amount", prefixText: "\$ "),
+                decoration: const InputDecoration(labelText: "Amount", prefixText: "? "),
                 keyboardType: TextInputType.number,
                 validator: (val) => val!.isEmpty ? 'Enter amount' : null,
               ),
               const SizedBox(height: 24),
-              const Text("DEADLINE", style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1)),
+              const Text("DEADLINE", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, letterSpacing: 1)),
               const SizedBox(height: 12),
               GestureDetector(
                 onTap: () async {

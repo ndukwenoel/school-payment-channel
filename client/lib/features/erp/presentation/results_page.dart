@@ -52,7 +52,7 @@ class _ResultsPageState extends State<ResultsPage> {
               child: _loading 
                 ? const Center(child: CircularProgressIndicator())
                 : _report == null 
-                  ? const Center(child: Text("Select criteria and generate report.", style: TextStyle(color: Colors.white38)))
+                  ? const Center(child: Text("Select criteria and generate report.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5))))
                   : _buildReportView(),
             )
           ],
@@ -86,13 +86,13 @@ class _ResultsPageState extends State<ResultsPage> {
         Expanded(
           child: ListView.separated(
             itemCount: students.length,
-            separatorBuilder: (c, i) => const Divider(color: Colors.white12),
+            separatorBuilder: (c, i) => const Divider(color: AppTheme.textMuted.withOpacity(0.1)),
             itemBuilder: (context, index) {
               final s = students[index];
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: AppTheme.surfaceLight,
-                  child: Text("#${s['rank']}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: Text("#${s['rank']}", style: const TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.bold)),
                 ),
                 title: Text(s['student_name'], style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text("Average: ${s['average'].toStringAsFixed(1)}%"),

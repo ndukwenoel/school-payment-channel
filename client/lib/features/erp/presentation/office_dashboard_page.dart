@@ -43,13 +43,13 @@ class OfficeDashboardPage extends StatelessWidget {
             const Text("Admin Control", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           ],
         ),
-        const Icon(Icons.settings_outlined, color: Colors.white38),
+        const Icon(Icons.settings_outlined, color: AppTheme.textMuted.withOpacity(0.5)),
       ],
     );
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(title, style: const TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1));
+    return Text(title, style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1));
   }
 
   Widget _buildModuleGrid(BuildContext context) {
@@ -105,7 +105,7 @@ class OfficeDashboardPage extends StatelessWidget {
         final items = snapshot.data ?? [];
         final lowStock = items.where((i) => i['quantity'] < 10).toList();
 
-        if (lowStock.isEmpty) return const Text("Inventory healthy.", style: TextStyle(color: Colors.white38));
+        if (lowStock.isEmpty) return const Text("Inventory healthy.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5)));
 
         return Column(
           children: lowStock.map((item) => Container(

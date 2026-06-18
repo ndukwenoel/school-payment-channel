@@ -27,6 +27,7 @@ import 'features/erp/presentation/results_page.dart';
 import 'features/erp/presentation/broadcast_page.dart';
 import 'features/erp/presentation/resource_pages.dart';
 import 'features/dashboard/screens/finance_dashboard_screen.dart';
+import 'features/dashboard/main_layout.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -74,78 +75,85 @@ class AppView extends StatelessWidget {
           path: '/register',
           builder: (context, state) => const RegisterPage(),
         ),
-        GoRoute(
-          path: '/dashboard',
-          builder: (context, state) => const DashboardPage(),
-        ),
-        GoRoute(
-          path: '/link-student',
-          builder: (context, state) => const LinkStudentPage(),
-        ),
-        GoRoute(
-          path: '/notifications',
-          builder: (context, state) => const NotificationHistoryPage(),
-        ),
-        GoRoute(
-          path: '/invoices',
-          builder: (context, state) => const InvoicesListPage(),
-        ),
-        GoRoute(
-          path: '/invoice-detail',
-          builder: (context, state) {
-            final invoice = state.extra as Invoice;
-            return InvoiceDetailPage(invoice: invoice);
+        ShellRoute(
+          builder: (context, state, child) {
+            return MainLayout(child: child);
           },
-        ),
-        GoRoute(
-          path: '/payment-method',
-          builder: (context, state) {
-            final invoice = state.extra as Invoice;
-            return PaymentMethodPage(invoice: invoice);
-          },
-        ),
-        GoRoute(
-          path: '/payment-success',
-          builder: (context, state) {
-            final invoice = state.extra as Invoice;
-            return PaymentSuccessPage(invoice: invoice);
-          },
-        ),
-        GoRoute(
-          path: '/erp/academic',
-          builder: (context, state) => const AcademicDashboardPage(),
-        ),
-        GoRoute(
-          path: '/erp/office',
-          builder: (context, state) => const OfficeDashboardPage(),
-        ),
-        GoRoute(
-          path: '/erp/fees',
-          builder: (context, state) => const FeeManagementPage(),
-        ),
-        GoRoute(
-          path: '/erp/payroll',
-          builder: (context, state) => const PayrollPage(),
-        ),
-        GoRoute(
-          path: '/erp/results',
-          builder: (context, state) => const ResultsPage(),
-        ),
-        GoRoute(
-          path: '/erp/broadcasts',
-          builder: (context, state) => const BroadcastPage(),
-        ),
-        GoRoute(
-          path: '/erp/upload',
-          builder: (context, state) => const ResourceUploadPage(),
-        ),
-        GoRoute(
-          path: '/erp/review',
-          builder: (context, state) => const ResourceReviewPage(),
-        ),
-        GoRoute(
-          path: '/erp/finance',
-          builder: (context, state) => const FinanceDashboardScreen(),
+          routes: [
+            GoRoute(
+              path: '/dashboard',
+              builder: (context, state) => const DashboardPage(),
+            ),
+            GoRoute(
+              path: '/link-student',
+              builder: (context, state) => const LinkStudentPage(),
+            ),
+            GoRoute(
+              path: '/notifications',
+              builder: (context, state) => const NotificationHistoryPage(),
+            ),
+            GoRoute(
+              path: '/invoices',
+              builder: (context, state) => const InvoicesListPage(),
+            ),
+            GoRoute(
+              path: '/invoice-detail',
+              builder: (context, state) {
+                final invoice = state.extra as Invoice;
+                return InvoiceDetailPage(invoice: invoice);
+              },
+            ),
+            GoRoute(
+              path: '/payment-method',
+              builder: (context, state) {
+                final invoice = state.extra as Invoice;
+                return PaymentMethodPage(invoice: invoice);
+              },
+            ),
+            GoRoute(
+              path: '/payment-success',
+              builder: (context, state) {
+                final invoice = state.extra as Invoice;
+                return PaymentSuccessPage(invoice: invoice);
+              },
+            ),
+            GoRoute(
+              path: '/erp/academic',
+              builder: (context, state) => const AcademicDashboardPage(),
+            ),
+            GoRoute(
+              path: '/erp/office',
+              builder: (context, state) => const OfficeDashboardPage(),
+            ),
+            GoRoute(
+              path: '/erp/fees',
+              builder: (context, state) => const FeeManagementPage(),
+            ),
+            GoRoute(
+              path: '/erp/payroll',
+              builder: (context, state) => const PayrollPage(),
+            ),
+            GoRoute(
+              path: '/erp/results',
+              builder: (context, state) => const ResultsPage(),
+            ),
+            GoRoute(
+              path: '/erp/broadcasts',
+              builder: (context, state) => const BroadcastPage(),
+            ),
+            GoRoute(
+              path: '/erp/upload',
+              builder: (context, state) => const ResourceUploadPage(),
+            ),
+            GoRoute(
+              path: '/erp/review',
+              builder: (context, state) => const ResourceReviewPage(),
+            ),
+            GoRoute(
+              path: '/erp/finance',
+              builder: (context, state) => const FinanceDashboardScreen(),
+            ),
+          ],
         ),
       ],
       redirect: (context, state) {
@@ -157,7 +165,7 @@ class AppView extends StatelessWidget {
 
     return MaterialApp.router(
       title: 'Channel',
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

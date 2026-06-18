@@ -44,7 +44,7 @@ class _LinkStudentPageState extends State<LinkStudentPage> {
           children: [
             const Text(
               "Please enter the enrollment number assigned by the school to link your account.",
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 14),
             ),
             const SizedBox(height: 32),
             TextField(

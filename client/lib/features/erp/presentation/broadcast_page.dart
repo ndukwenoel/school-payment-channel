@@ -70,14 +70,14 @@ class _BroadcastPageState extends State<BroadcastPage> {
               const SizedBox(height: 8),
               const Text(
                 "Send newsletters, alerts, or event notifications to all registered parents.",
-                style: TextStyle(color: Colors.white54, fontSize: 13),
+                style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
               ),
               const SizedBox(height: 32),
               DropdownButtonFormField<String>(
                 value: _type,
                 dropdownColor: AppTheme.surfaceLight,
                 items: ["newsletter", "alert", "event"].map((t) => 
-                  DropdownMenuItem(value: t, child: Text(t.toUpperCase(), style: const TextStyle(color: Colors.white)))
+                  DropdownMenuItem(value: t, child: Text(t.toUpperCase(), style: const TextStyle(color: AppTheme.textDark)))
                 ).toList(),
                 onChanged: (v) => setState(() => _type = v!),
                 decoration: const InputDecoration(labelText: "Broadcast Type"),

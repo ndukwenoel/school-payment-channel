@@ -91,16 +91,12 @@ class _DashboardPageState extends State<DashboardPage> {
                     padding: EdgeInsets.symmetric(vertical: 16.0),
                     child: Text(
                       "ADMIN CONSOLE",
-                      style: TextStyle(color: Colors.white70, fontSize: 13, letterSpacing: 2, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: AppTheme.textMuted, fontSize: 13, letterSpacing: 2, fontWeight: FontWeight.bold),
                     ),
                   ),
                   _buildHeroStats(stats),
-                  const SizedBox(height: 24),
-                  const Text("QUICK ACTIONS", style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1)),
-                  const SizedBox(height: 12),
-                  _buildQuickActions(context),
                   const SizedBox(height: 32),
-                  const Text("RECENT ENROLLMENTS", style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1)),
+                  const Text("RECENT ENROLLMENTS", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, letterSpacing: 1)),
                   const SizedBox(height: 12),
                   _buildRecentStudents(),
                   const SizedBox(height: 40),
@@ -128,13 +124,13 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               _buildStatItem("STUDENTS", "${stats['total_students']}", AppTheme.blueVibrant),
               const SizedBox(width: 40),
-              _buildStatItem("REVENUE", "\$${stats['total_revenue']}", AppTheme.limeLight),
+              _buildStatItem("REVENUE", "?${stats['total_revenue']}", AppTheme.limeLight),
             ],
           ),
           const SizedBox(height: 24),
-          const Divider(color: Colors.white10),
+          const Divider(color: AppTheme.textMuted.withOpacity(0.1)),
           const SizedBox(height: 24),
-          _buildStatItem("OUTSTANDING", "\$${stats['outstanding_fees']}", AppTheme.bluePale, large: true),
+          _buildStatItem("OUTSTANDING", "?${stats['outstanding_fees']}", AppTheme.bluePale, large: true),
         ],
       ),
     );
@@ -144,47 +140,14 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 1)),
+        Text(label, style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 10, letterSpacing: 1)),
         const SizedBox(height: 4),
         Text(val, style: TextStyle(fontSize: large ? 32 : 24, fontWeight: FontWeight.bold, color: color)),
       ],
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        _buildActionBtn(context, "Link Student", Icons.person_add_outlined, '/link-student'),
-        _buildActionBtn(context, "Create Invoice", Icons.add_card_outlined, '/create-invoice'),
-        _buildActionBtn(context, "All Invoices", Icons.list_alt_outlined, '/invoices'),
-        _buildActionBtn(context, "Notifications", Icons.notifications_none_outlined, '/notifications'),
-      ],
-    );
-  }
 
-  Widget _buildActionBtn(BuildContext context, String label, IconData icon, String route) {
-    return GestureDetector(
-      onTap: () => context.push(route),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppTheme.blueVibrant.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppTheme.blueVibrant.withOpacity(0.2)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: AppTheme.blueVibrant),
-            const SizedBox(width: 8),
-            Text(label, style: const TextStyle(color: AppTheme.blueVibrant, fontWeight: FontWeight.w500)),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildRecentStudents() {
     return FutureBuilder<List<Student>>(
@@ -194,7 +157,7 @@ class _DashboardPageState extends State<DashboardPage> {
           return const Center(child: LinearProgressIndicator());
         }
         final students = snapshot.data ?? [];
-        if (students.isEmpty) return const Text("No recent students found.", style: TextStyle(color: Colors.white38));
+        if (students.isEmpty) return const Text("No recent students found.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5)));
         
         return Column(
           children: students.take(5).map((s) => Container(
@@ -209,8 +172,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: Text(s.fullName[0], style: const TextStyle(color: AppTheme.blueVibrant)),
               ),
               title: Text(s.fullName, style: const TextStyle(fontWeight: FontWeight.w500)),
-              subtitle: Text(s.enrollmentNumber, style: const TextStyle(color: Colors.white38, fontSize: 12)),
-              trailing: const Icon(Icons.chevron_right, color: Colors.white10),
+              subtitle: Text(s.enrollmentNumber, style: const TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 12)),
+              trailing: const Icon(Icons.chevron_right, color: AppTheme.textMuted.withOpacity(0.1)),
             ),
           )).toList(),
         );

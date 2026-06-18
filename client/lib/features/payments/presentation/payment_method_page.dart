@@ -101,10 +101,10 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
       children: [
         GestureDetector(
           onTap: () => context.pop(),
-          child: const Icon(Icons.arrow_back_ios_new, size: 14, color: Colors.white),
+          child: const Icon(Icons.arrow_back_ios_new, size: 14, color: AppTheme.textDark),
         ),
         const SizedBox(width: 16),
-        const Text("PAYMENT METHOD", style: TextStyle(color: Colors.white70, fontSize: 13, letterSpacing: 0.5)),
+        const Text("PAYMENT METHOD", style: TextStyle(color: AppTheme.textMuted, fontSize: 13, letterSpacing: 0.5)),
       ],
     );
   }
@@ -112,7 +112,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   Widget _buildSectionLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
-      child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 0.5)),
+      child: Text(label, style: const TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 0.5)),
     );
   }
 
@@ -142,7 +142,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                  Text(sub, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                  Text(sub, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
                 ],
               ),
             ),
@@ -175,19 +175,19 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text("🔒 SECURE 256-BIT SSL ENCRYPTION", style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 1)),
+          const Text("🔒 SECURE 256-BIT SSL ENCRYPTION", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5), fontSize: 10, letterSpacing: 1)),
           const SizedBox(height: 12),
           ElevatedButton(
             onPressed: _isLoading ? null : _handlePayment,
             child: _isLoading 
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.textDark))
               : Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("Continue to Pay"),
                 Row(
                   children: [
-                    Text("\$${widget.invoice.totalAmount.toStringAsFixed(2)}"),
+                    Text("?${widget.invoice.totalAmount.toStringAsFixed(2)}"),
                     const SizedBox(width: 8),
                     const Icon(Icons.arrow_forward_ios, size: 14),
                   ],

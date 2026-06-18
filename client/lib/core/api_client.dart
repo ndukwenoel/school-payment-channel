@@ -20,6 +20,9 @@ class ApiClient {
         )) {
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
+        if (!options.path.startsWith('/api/v1') && !options.path.startsWith('http')) {
+           options.path = '/api/v1' + (options.path.startsWith('/') ? options.path : '/${options.path}');
+        }
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString('access_token');
         if (token != null) {

@@ -53,11 +53,11 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             width: 32,
             height: 32,
             decoration: const BoxDecoration(color: AppTheme.surfaceLight, shape: BoxShape.circle),
-            child: const Icon(Icons.arrow_back_ios_new, size: 14, color: Colors.white),
+            child: const Icon(Icons.arrow_back_ios_new, size: 14, color: AppTheme.textDark),
           ),
         ),
         const SizedBox(width: 16),
-        const Text("INVOICE DETAILS", style: TextStyle(color: Colors.white70, fontSize: 13, letterSpacing: 0.5)),
+        const Text("INVOICE DETAILS", style: TextStyle(color: AppTheme.textMuted, fontSize: 13, letterSpacing: 0.5)),
       ],
     );
   }
@@ -78,7 +78,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           const SizedBox(height: 4),
           Text(widget.invoice.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text("\$${widget.invoice.totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w500)),
+          Text("?${widget.invoice.totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -87,7 +87,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   Widget _buildSectionLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
-      child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 0.5)),
+      child: Text(label, style: const TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 0.5)),
     );
   }
 
@@ -109,8 +109,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-          Text("\$${val.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+          Text(label, style: const TextStyle(color: AppTheme.textMuted, fontSize: 14)),
+          Text("?${val.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
         ],
       ),
     );
@@ -134,7 +134,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("OCT", style: TextStyle(fontSize: 10, color: Colors.white70)),
+                const Text("OCT", style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
                 Text("$day", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
@@ -147,9 +147,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   Widget _buildPaymentOptions() {
     return Column(
       children: [
-        _buildOptionCard("Pay in Full", "One-time payment of \$${widget.invoice.totalAmount.toStringAsFixed(2)}", true),
+        _buildOptionCard("Pay in Full", "One-time payment of ?${widget.invoice.totalAmount.toStringAsFixed(2)}", true),
         const SizedBox(height: 8),
-        _buildOptionCard("Installment Plan", "4 payments of \$${(widget.invoice.totalAmount / 4).toStringAsFixed(2)} / mo", false),
+        _buildOptionCard("Installment Plan", "4 payments of ?${(widget.invoice.totalAmount / 4).toStringAsFixed(2)} / mo", false),
       ],
     );
   }
@@ -178,7 +178,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                Text(desc, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                Text(desc, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
               ],
             )
           ],
@@ -206,7 +206,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             const Text("Confirm & Pay Now"),
             Row(
               children: [
-                Text("\$${widget.invoice.totalAmount.toStringAsFixed(2)}"),
+                Text("?${widget.invoice.totalAmount.toStringAsFixed(2)}"),
                 const SizedBox(width: 8),
                 const Icon(Icons.arrow_forward_ios, size: 14),
               ],

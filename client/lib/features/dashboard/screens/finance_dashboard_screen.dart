@@ -229,38 +229,38 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text("LEDGER REVENUE", style: TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 1.5)),
+          const Text("LEDGER REVENUE", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
           const SizedBox(height: 8),
-          _buildMetricCard("Total Collected Revenue", "\$${_totalRevenue.toStringAsFixed(2)}", AppTheme.limeLight),
+          _buildMetricCard("Total Collected Revenue", "?${_totalRevenue.toStringAsFixed(2)}", AppTheme.limeLight),
           
           if (_revenueBreakdowns.isNotEmpty) ...[
             const SizedBox(height: 16),
-            const Text("Revenue by Category:", style: TextStyle(color: Colors.white70)),
+            const Text("Revenue by Category:", style: TextStyle(color: AppTheme.textMuted)),
             const SizedBox(height: 8),
             ..._revenueBreakdowns.map((b) => ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.pie_chart, color: Colors.white54),
+              leading: const Icon(Icons.pie_chart, color: AppTheme.textMuted),
               title: Text(b['category'].toString()),
-              trailing: Text("\$${b['amount'].toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              trailing: Text("?${b['amount'].toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             )).toList(),
           ],
           
           const SizedBox(height: 24),
-          const Text("EXPECTED SETTLEMENTS", style: TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 1.5)),
+          const Text("EXPECTED SETTLEMENTS", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
           const SizedBox(height: 8),
-          _buildMetricCard("Pending Payouts", "\$${totalExpected.toStringAsFixed(2)}", AppTheme.blueVibrant),
+          _buildMetricCard("Pending Payouts", "?${totalExpected.toStringAsFixed(2)}", AppTheme.blueVibrant),
           const SizedBox(height: 16),
           if (providers.isNotEmpty) ...[
-            const Text("Breakdown by Provider:", style: TextStyle(color: Colors.white70)),
+            const Text("Breakdown by Provider:", style: TextStyle(color: AppTheme.textMuted)),
             const SizedBox(height: 8),
             ...providers.entries.map((e) => ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.account_balance_wallet, color: Colors.white54),
+              leading: const Icon(Icons.account_balance_wallet, color: AppTheme.textMuted),
               title: Text(e.key.toString().toUpperCase()),
-              trailing: Text("\$${e.value.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              trailing: Text("?${e.value.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             )).toList(),
           ] else
-            const Text("No pending provider payouts.", style: TextStyle(color: Colors.white38)),
+            const Text("No pending provider payouts.", style: TextStyle(color: AppTheme.textMuted.withOpacity(0.5))),
         ],
       ),
     );
@@ -277,7 +277,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+          Text(title, style: const TextStyle(color: AppTheme.textMuted, fontSize: 14)),
           const SizedBox(height: 8),
           Text(amount, style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: accentColor)),
         ],
@@ -306,10 +306,10 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
             child: ListTile(
               leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 36),
               title: Text(exc['description'], style: const TextStyle(fontWeight: FontWeight.w500)),
-              subtitle: Text('Unreconciled Amount: \$${exc['amount']}'),
+              subtitle: Text('Unreconciled Amount: ?${exc['amount']}'),
               trailing: ElevatedButton(
                 onPressed: () => _showResolveDialog(exc['id'], exc['description']),
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.blueVibrant, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.blueVibrant, foregroundcolor: AppTheme.textDark),
                 child: const Text('Resolve'),
               ),
             ),
@@ -336,11 +336,11 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text("AGING DEBT SUMMARY", style: TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 1.5)),
+          const Text("AGING DEBT SUMMARY", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
           const SizedBox(height: 8),
-          _buildMetricCard("Total Overdue", "\$${totalOverdue.toStringAsFixed(2)}", Colors.redAccent),
+          _buildMetricCard("Total Overdue", "?${totalOverdue.toStringAsFixed(2)}", Colors.redAccent),
           const SizedBox(height: 24),
-          const Text("DEBT BY AGE BUCKET", style: TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 1.5)),
+          const Text("DEBT BY AGE BUCKET", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
           const SizedBox(height: 12),
           ...buckets.map((b) => Card(
             margin: const EdgeInsets.only(bottom: 12),
@@ -348,7 +348,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
               leading: const Icon(Icons.hourglass_bottom, color: Colors.redAccent),
               title: Text(b['bucket'], style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text("${b['invoice_ids'].length} invoices affected"),
-              trailing: Text("\$${b['total_amount'].toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              trailing: Text("?${b['total_amount'].toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, color: Colors.redAccent, fontWeight: FontWeight.bold)),
             ),
           )).toList(),
         ],
