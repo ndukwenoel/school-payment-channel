@@ -1,5 +1,5 @@
 from .schemas import BaseEvent
-from worker.tasks import process_domain_event
+from server.worker.tasks import process_domain_event
 
 class EventDispatcher:
     @staticmethod

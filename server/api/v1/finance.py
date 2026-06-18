@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from .. import database, models, schemas
+from ... import database, models, schemas
 from .auth import get_db, get_current_user, CheckRole
-from ..core.ledger import record_transaction
+from ...core.ledger import record_transaction
 
 router = APIRouter(
     prefix="/finance",

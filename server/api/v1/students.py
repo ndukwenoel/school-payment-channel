@@ -1,12 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
-from .. import database, models, schemas
+from ... import database, models, schemas
 from .auth import get_db, get_current_user
 import csv
 import codecs
 from io import StringIO
 
 from .auth import get_db, get_current_user, CheckRole
+
+router = APIRouter(
+    prefix="/students",
+    tags=["Students"]
+)
 
 @router.get("/", response_model=list[schemas.Student])
 def read_students(

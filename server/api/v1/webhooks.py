@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException, Header
 from ...services.payment_adapters import get_payment_adapter
 from ...events import BaseEvent, EventDispatcher
-from .. import database
+from ... import database
 
 router = APIRouter(
     prefix="/webhooks",
