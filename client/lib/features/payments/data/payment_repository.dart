@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../../../core/api_client.dart';
 import '../data/payment_models.dart';
-import '../../dashboard/data/dashboard_models.dart'; // Import Student model
+import '../../dashboard/data/dashboard_repository.dart'; // Import Student model
 
 class PaymentRepository {
   final ApiClient _apiClient;

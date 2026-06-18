@@ -164,3 +164,44 @@ async def import_students(
             EventDispatcher.publish(event)
             
     return {"message": "Import processed", "imported_count": imported_count, "errors": errors}
+
+@router.post("/promote")
+def promote_students(
+    promotion_data: schemas.StudentBulkPromote,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin"]))
+):
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to a school")
+        
+    students = db.query(models.Student).filter(
+        models.Student.grade == promotion_data.current_grade,
+        models.Student.school_id == current_user.school_id
+    ).all()
+    
+    if not students:
+        return {"message": "No students found in the specified grade", "count": 0}
+        
+    promoted_count = 0
+    from ...events import BaseEvent, EventDispatcher
+    
+    for student in students:
+        old_grade = student.grade
+        student.grade = promotion_data.new_grade
+        promoted_count += 1
+        
+        event = BaseEvent(
+            event_type="StudentPromoted",
+            school_id=student.school_id,
+            payload={
+                "student_id": student.id,
+                "old_grade": old_grade,
+                "new_grade": student.grade
+            }
+        )
+        EventDispatcher.publish(event)
+        
+    db.commit()
+    
+    return {"message": f"Successfully promoted {promoted_count} students", "count": promoted_count}
+

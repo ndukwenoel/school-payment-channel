@@ -21,7 +21,7 @@ class AcademicDashboardPage extends StatelessWidget {
               const SizedBox(height: 32),
               _buildSectionTitle("ACADEMIC OVERVIEW"),
               const SizedBox(height: 16),
-              _buildQuickStats(),
+              _buildQuickStats(context),
               const SizedBox(height: 32),
               _buildSectionTitle("MY CLASSROOMS"),
               const SizedBox(height: 16),
@@ -58,7 +58,7 @@ class AcademicDashboardPage extends StatelessWidget {
     return Text(title, style: const TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1));
   }
 
-  Widget _buildQuickStats() {
+  Widget _buildQuickStats(BuildContext context) {
     return Row(
       children: [
         Expanded(child: _buildStatCard("Total Students", "124", Icons.groups_outlined)),

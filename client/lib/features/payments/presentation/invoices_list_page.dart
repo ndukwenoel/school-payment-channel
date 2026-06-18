@@ -148,15 +148,14 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: List.generate(11, (index) {
               double h = [12.0, 24.0, 16.0, 32.0, 20.0, 14.0, 28.0, 10.0, 12.0, 12.0, 12.0][index];
-              bool highlight = index == 3;
               return Container(
                 width: 4,
                 height: h,
                 margin: const EdgeInsets.only(right: 4),
                 decoration: BoxDecoration(
-                  color: highlight ? AppTheme.blueVibrant : AppTheme.limeLight,
-                  borderRadius: BorderRadius.circular(2),
-                  opacity: index > 7 ? 0.3 : 0.8,
+                  color: AppTheme.surfaceLight.withOpacity(index > 7 ? 0.3 : 0.8),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.05)),
                 ),
               );
             }),

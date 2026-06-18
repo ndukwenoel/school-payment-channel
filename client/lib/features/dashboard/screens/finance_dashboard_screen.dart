@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/api_client.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/theme.dart';
+import 'dart:html' as html;
+import 'dart:typed_data';
 
 class FinanceDashboardScreen extends StatefulWidget {
   const FinanceDashboardScreen({super.key});
@@ -17,6 +19,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
   List<dynamic> _exceptions = [];
   Map<String, dynamic>? _agingReport;
   double _totalRevenue = 0.0;
+  List<dynamic> _revenueBreakdowns = [];
   Map<String, dynamic>? _expectedSettlements;
   
   bool _isLoadingExceptions = true;
@@ -53,6 +56,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       
       setState(() {
         _totalRevenue = revRes.data['total_revenue'] ?? 0.0;
+        _revenueBreakdowns = revRes.data['breakdowns'] ?? [];
         _expectedSettlements = setRes.data;
       });
     } on DioException catch (e) {
@@ -101,6 +105,54 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     }
   }
 
+  Future<void> _uploadSettlement() async {
+    try {
+      final uploadInput = html.FileUploadInputElement()..accept = '.csv';
+      uploadInput.click();
+
+      uploadInput.onChange.listen((e) {
+        final files = uploadInput.files;
+        if (files != null && files.isNotEmpty) {
+          final file = files[0];
+          final reader = html.FileReader();
+          reader.readAsArrayBuffer(file);
+          reader.onLoadEnd.listen((e) async {
+            setState(() => _isLoadingOverview = true);
+            try {
+              final formData = FormData.fromMap({
+                "file": MultipartFile.fromBytes(
+                  reader.result as Uint8List,
+                  filename: "settlement.csv",
+                ),
+              });
+              final response = await _apiClient.dio.post(
+                '/api/v1/settlements/upload',
+                data: formData,
+              );
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Upload successful: ${response.data["processed"]} records processed')),
+                );
+              }
+              _fetchOverviewData();
+            } catch (err) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to upload: $err')));
+              }
+              setState(() => _isLoadingOverview = false);
+            }
+          });
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error triggering file picker: $e')),
+        );
+      }
+    }
+  }
+
   void _showResolveDialog(int transactionId, String description) {
     showDialog(
       context: context,
@@ -145,6 +197,13 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.pop(),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.upload_file),
+              tooltip: 'Upload Settlement CSV',
+              onPressed: _uploadSettlement,
+            ),
+          ],
         ),
         body: TabBarView(
           children: [
@@ -173,6 +232,19 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
           const Text("LEDGER REVENUE", style: TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 1.5)),
           const SizedBox(height: 8),
           _buildMetricCard("Total Collected Revenue", "\$${_totalRevenue.toStringAsFixed(2)}", AppTheme.limeLight),
+          
+          if (_revenueBreakdowns.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text("Revenue by Category:", style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 8),
+            ..._revenueBreakdowns.map((b) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.pie_chart, color: Colors.white54),
+              title: Text(b['category'].toString()),
+              trailing: Text("\$${b['amount'].toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            )).toList(),
+          ],
+          
           const SizedBox(height: 24),
           const Text("EXPECTED SETTLEMENTS", style: TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 1.5)),
           const SizedBox(height: 8),

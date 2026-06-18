@@ -45,6 +45,10 @@ def process_domain_event(event_data: dict):
         handle_payment_received(payload, school_id)
     elif event_type == "VirtualAccountFunded":
         handle_virtual_account_funded(payload, school_id)
+    elif event_type == "StudentPromoted":
+        handle_student_promoted(payload, school_id)
+    elif event_type == "InvoiceOverdue":
+        handle_invoice_overdue(payload, school_id)
     else:
         print(f"[EVENT CONSUMER] No handler defined for event type: {event_type}")
         
@@ -263,5 +267,131 @@ def handle_virtual_account_funded(payload: dict, school_id: int):
         db.rollback()
         print(f"[EVENT HANDLER] Error processing VAM funding: {e}")
         raise
+    finally:
+        db.close()
+
+def handle_student_promoted(payload: dict, school_id: int):
+    student_id = payload.get("student_id")
+    new_grade = payload.get("new_grade")
+    
+    print(f"[EVENT HANDLER] Processing StudentPromoted for student {student_id} to {new_grade}. Generating Term 1 Invoice...")
+    
+    from ..database import SessionLocal
+    from ..models import Invoice, InvoiceLineItem
+    from datetime import datetime, timedelta, timezone
+    
+    db = SessionLocal()
+    try:
+        invoice_title = f"Term 1 Tuition Invoice - {new_grade}"
+        
+        # Idempotency check
+        existing_invoice = db.query(Invoice).filter(
+            Invoice.student_id == student_id,
+            Invoice.title == invoice_title
+        ).first()
+        
+        if existing_invoice:
+            print(f"[EVENT HANDLER] Invoice '{invoice_title}' already exists for student {student_id}. Skipping.")
+            return
+            
+        new_invoice = Invoice(
+            title=invoice_title,
+            due_date=datetime.now(timezone.utc) + timedelta(days=30), # Give them 30 days
+            status="pending",
+            student_id=student_id,
+            school_id=school_id
+        )
+        db.add(new_invoice)
+        db.flush()
+        
+        # Standard line items for a new term
+        line_items = [
+            InvoiceLineItem(invoice_id=new_invoice.id, title="Tuition Fee", amount=1500.00),
+            InvoiceLineItem(invoice_id=new_invoice.id, title="Library Fee", amount=100.00),
+            InvoiceLineItem(invoice_id=new_invoice.id, title="Technology Fee", amount=50.00)
+        ]
+        db.add_all(line_items)
+        db.commit()
+        print(f"[EVENT HANDLER] Successfully generated Term 1 invoice for promoted student {student_id}.")
+    except Exception as e:
+        db.rollback()
+        print(f"[EVENT HANDLER] Error generating invoice on promotion: {e}")
+        raise
+    finally:
+        db.close()
+
+def handle_invoice_overdue(payload: dict, school_id: int):
+    invoice_id = payload.get("invoice_id")
+    student_id = payload.get("student_id")
+    
+    print(f"[EVENT HANDLER] Processing InvoiceOverdue for invoice {invoice_id}. Sending reminder...")
+    
+    from ..database import SessionLocal
+    from ..models import Invoice, NotificationLog
+    
+    db = SessionLocal()
+    try:
+        invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+        if not invoice or invoice.status not in ["pending", "partial"]:
+            return
+            
+        student = invoice.student
+        
+        if student and student.parent:
+            log = NotificationLog(
+                recipient_email=student.parent.email,
+                subject=f"OVERDUE NOTICE: {invoice.title}",
+                message=f"Dear {student.parent.full_name}, your invoice '{invoice.title}' is now overdue. Please settle the outstanding balance immediately.",
+                status="sent",
+                school_id=school_id
+            )
+            db.add(log)
+            
+        invoice.status = "overdue"
+        db.commit()
+        print(f"[EVENT HANDLER] Invoice {invoice_id} marked as overdue and reminder logged.")
+    except Exception as e:
+        db.rollback()
+        print(f"[EVENT HANDLER] Error handling overdue invoice: {e}")
+        raise
+    finally:
+        db.close()
+
+@celery_app.task(name="sweep_overdue_invoices")
+def sweep_overdue_invoices():
+    """
+    Cron task that runs daily to find overdue invoices and dispatch events.
+    """
+    print("[CRON] Sweeping for overdue invoices...")
+    
+    from ..database import SessionLocal
+    from ..models import Invoice
+    from datetime import datetime, timezone
+    from ..events import BaseEvent, EventDispatcher
+    
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        overdue_invoices = db.query(Invoice).filter(
+            Invoice.status.in_(["pending", "partial"]),
+            Invoice.due_date < now
+        ).all()
+        
+        count = 0
+        for invoice in overdue_invoices:
+            event = BaseEvent(
+                event_type="InvoiceOverdue",
+                school_id=invoice.school_id,
+                payload={
+                    "invoice_id": invoice.id,
+                    "student_id": invoice.student_id
+                }
+            )
+            EventDispatcher.publish(event)
+            count += 1
+            
+        print(f"[CRON] Found {count} overdue invoices and dispatched events.")
+    except Exception as e:
+        print(f"[CRON] Error sweeping overdue invoices: {e}")
     finally:
         db.close()

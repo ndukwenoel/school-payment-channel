@@ -39,6 +39,10 @@ class Student(StudentBase):
     class Config:
         from_attributes = True
 
+class StudentBulkPromote(BaseModel):
+    current_grade: str
+    new_grade: str
+
 # --- Discount Schemas ---
 class DiscountBase(BaseModel):
     name: str
@@ -393,9 +397,13 @@ class AgingReportResponse(BaseModel):
     total_overdue: float
     buckets: List[AgingBucket]
 
+class RevenueBreakdown(BaseModel):
+    category: str
+    amount: float
+
 class RevenueReportResponse(BaseModel):
     total_revenue: float
-    # We could add more granular data here if needed, like daily breakdown.
+    breakdowns: List[RevenueBreakdown] = []
     
 class ExpectedSettlementResponse(BaseModel):
     total_expected: float

@@ -192,7 +192,20 @@ def get_revenue_report(
         models.LedgerEntry.type == "credit"
     ).scalar() or 0.0
     
-    return schemas.RevenueReportResponse(total_revenue=total_revenue)
+    # Get breakdown by Invoice Title from PaymentAttempts
+    breakdowns = []
+    results = db.query(
+        models.Invoice.title, 
+        func.sum(models.PaymentAttempt.amount)
+    ).join(models.PaymentAttempt).filter(
+        models.PaymentAttempt.school_id == current_user.school_id,
+        models.PaymentAttempt.status.in_(["success", "settled"])
+    ).group_by(models.Invoice.title).all()
+    
+    for title, amount in results:
+        breakdowns.append(schemas.RevenueBreakdown(category=title, amount=amount or 0.0))
+    
+    return schemas.RevenueReportResponse(total_revenue=total_revenue, breakdowns=breakdowns)
 
 @router.get("/expected-settlements", response_model=schemas.ExpectedSettlementResponse)
 def get_expected_settlements(

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../data/dashboard_repository.dart';
-import '../../../core/theme.dart';
-import '../../../core/api_client.dart';
+import 'package:client/features/dashboard/data/dashboard_repository.dart';
+import 'package:client/core/theme.dart';
+import 'package:client/core/api_client.dart';
 
 // Simple StatefulWidget for MVP instead of full Bloc for now to save tokens/time
 class DashboardPage extends StatefulWidget {

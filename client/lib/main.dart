@@ -17,6 +17,7 @@ import 'features/payments/presentation/payment_method_page.dart';
 import 'features/payments/presentation/payment_success_page.dart';
 import 'features/payments/data/payment_models.dart';
 import 'features/notifications/presentation/notification_history_page.dart';
+import 'features/notifications/data/notification_repository.dart';
 import 'features/erp/data/erp_repository.dart';
 import 'features/erp/presentation/academic_dashboard_page.dart';
 import 'features/erp/presentation/office_dashboard_page.dart';

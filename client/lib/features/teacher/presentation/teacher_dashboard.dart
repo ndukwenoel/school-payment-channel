@@ -5,7 +5,6 @@ import '../../../core/theme.dart';
 import '../../../core/offline_service.dart';
 import '../../erp/data/erp_repository.dart';
 import '../../auth/presentation/auth_bloc.dart';
-import '../../auth/presentation/auth_event.dart';
 
 class TeacherDashboard extends StatefulWidget {
   const TeacherDashboard({super.key});

@@ -134,7 +134,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("OCT", style: TextStyle(fontSize: 10, opacity: 0.7)),
+                const Text("OCT", style: TextStyle(fontSize: 10, color: Colors.white70)),
                 Text("$day", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),

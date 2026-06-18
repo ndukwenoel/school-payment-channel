@@ -1,0 +1,4 @@
+Transaction Reference,Processing Fee,Settlement Amount,Status
+PAY-MOCK-1234,10.50,489.50,success
+PAY-MOCK-5678,5.00,245.00,success
+PAY-MOCK-9999,0.00,0.00,failed

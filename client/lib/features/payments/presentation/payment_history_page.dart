@@ -12,7 +12,7 @@ class PaymentHistoryPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.voidBlack,
       appBar: AppBar(title: const Text("PAYMENT HISTORY")),
-      body: FutureBuilder<List<Payment>>(
+      body: FutureBuilder<List<PaymentAttempt>>(
         future: context.read<PaymentRepository>().getPaymentHistory(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

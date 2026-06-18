@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../data/erp_repository.dart';
 import '../../../core/theme.dart';
+import 'package:go_router/go_router.dart';
 
 class OfficeDashboardPage extends StatelessWidget {
   const OfficeDashboardPage({super.key});
@@ -60,16 +61,16 @@ class OfficeDashboardPage extends StatelessWidget {
       mainAxisSpacing: 12,
       childAspectRatio: 1.5,
       children: [
-        _buildModuleCard("Fee Mgmt", Icons.monetization_on_outlined, AppTheme.blueVibrant),
-        _buildModuleCard("Payroll", Icons.payments_outlined, AppTheme.bluePale),
-        _buildModuleCard("Inventory", Icons.inventory_2_outlined, AppTheme.limeLight),
-        _buildModuleCard("Broadcasts", Icons.podcasts, Colors.orangeAccent),
-        _buildModuleCard("Approvals", Icons.fact_check_outlined, Colors.tealAccent),
+        _buildModuleCard(context, "Fee Mgmt", Icons.monetization_on_outlined, AppTheme.blueVibrant),
+        _buildModuleCard(context, "Payroll", Icons.payments_outlined, AppTheme.bluePale),
+        _buildModuleCard(context, "Inventory", Icons.inventory_2_outlined, AppTheme.limeLight),
+        _buildModuleCard(context, "Broadcasts", Icons.podcasts, Colors.orangeAccent),
+        _buildModuleCard(context, "Approvals", Icons.fact_check_outlined, Colors.tealAccent),
       ],
     );
   }
 
-  Widget _buildModuleCard(String title, IconData icon, Color accent) {
+  Widget _buildModuleCard(BuildContext context, String title, IconData icon, Color accent) {
     return GestureDetector(
       onTap: () {
         if (title == "Fee Mgmt") context.push('/erp/fees');
