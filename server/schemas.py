@@ -99,6 +99,66 @@ class Invoice(InvoiceBase):
     class Config:
         from_attributes = True
 
+# --- Fee Template Schemas ---
+class FeeTemplateLineItemBase(BaseModel):
+    title: str
+    amount: float
+
+class FeeTemplateLineItemCreate(FeeTemplateLineItemBase):
+    pass
+
+class FeeTemplateLineItem(FeeTemplateLineItemBase):
+    id: int
+    template_id: int
+
+    class Config:
+        from_attributes = True
+
+class FeeTemplateBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class FeeTemplateCreate(FeeTemplateBase):
+    line_items: List[FeeTemplateLineItemCreate]
+
+class FeeTemplate(FeeTemplateBase):
+    id: int
+    school_id: int
+    line_items: List[FeeTemplateLineItem] = []
+
+    class Config:
+        from_attributes = True
+
+# --- Installment Schemas ---
+class InstallmentBase(BaseModel):
+    amount_due: float
+    due_date: datetime
+
+class InstallmentCreate(InstallmentBase):
+    pass
+
+class Installment(InstallmentBase):
+    id: int
+    plan_id: int
+    status: str
+
+    class Config:
+        from_attributes = True
+
+class InstallmentPlanBase(BaseModel):
+    invoice_id: int
+
+class InstallmentPlanCreate(InstallmentPlanBase):
+    installments: List[InstallmentCreate]
+
+class InstallmentPlan(InstallmentPlanBase):
+    id: int
+    school_id: int
+    installments: List[Installment] = []
+
+    class Config:
+        from_attributes = True
+
 # --- Payment Attempt Schemas ---
 class PaymentAttemptBase(BaseModel):
     invoice_id: int

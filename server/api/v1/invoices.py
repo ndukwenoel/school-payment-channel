@@ -149,3 +149,85 @@ def get_student_invoices(
         db.commit()
         
     return invoices
+
+@router.get("/templates", response_model=List[schemas.FeeTemplate])
+def get_fee_templates(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(requires_permission("can_create_fee"))
+):
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to a school")
+    return db.query(models.FeeTemplate).filter(models.FeeTemplate.school_id == current_user.school_id).all()
+
+@router.post("/templates", response_model=schemas.FeeTemplate)
+def create_fee_template(
+    template_data: schemas.FeeTemplateCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(requires_permission("can_create_fee"))
+):
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to a school")
+        
+    new_template = models.FeeTemplate(
+        name=template_data.name,
+        description=template_data.description,
+        school_id=current_user.school_id
+    )
+    db.add(new_template)
+    db.flush()
+    
+    for item in template_data.line_items:
+        db.add(models.FeeTemplateLineItem(
+            template_id=new_template.id,
+            title=item.title,
+            amount=item.amount
+        ))
+        
+    db.commit()
+    db.refresh(new_template)
+    return new_template
+
+@router.post("/{invoice_id}/installments", response_model=schemas.InstallmentPlan)
+def create_installment_plan(
+    invoice_id: int,
+    plan_data: schemas.InstallmentPlanCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(requires_permission("can_create_fee"))
+):
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to a school")
+        
+    invoice = db.query(models.Invoice).filter(
+        models.Invoice.id == invoice_id,
+        models.Invoice.school_id == current_user.school_id
+    ).first()
+    
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+        
+    if invoice.installment_plan:
+        raise HTTPException(status_code=400, detail="Invoice already has an installment plan")
+        
+    total_invoice = sum(item.amount for item in invoice.line_items)
+    total_installments = sum(inst.amount_due for inst in plan_data.installments)
+    if abs(total_installments - total_invoice) > 0.01:
+        raise HTTPException(status_code=400, detail="Installment total must equal invoice total")
+        
+    plan = models.InstallmentPlan(
+        invoice_id=invoice.id,
+        school_id=current_user.school_id
+    )
+    db.add(plan)
+    db.flush()
+    
+    for inst in plan_data.installments:
+        db.add(models.Installment(
+            plan_id=plan.id,
+            amount_due=inst.amount_due,
+            due_date=inst.due_date,
+            status="pending"
+        ))
+        
+    db.commit()
+    db.refresh(plan)
+    return plan

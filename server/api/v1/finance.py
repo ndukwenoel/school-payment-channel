@@ -233,3 +233,100 @@ def get_expected_settlements(
     
     return schemas.ExpectedSettlementResponse(total_expected=total_expected, providers=providers)
 
+import csv
+from io import StringIO
+from fastapi import UploadFile, File
+
+@router.post("/bank-statement/upload")
+async def upload_bank_statement(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin"]))
+):
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to a school")
+        
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Only CSV files are allowed")
+        
+    content = await file.read()
+    decoded = content.decode('utf-8')
+    csv_reader = csv.DictReader(StringIO(decoded))
+    
+    required_fields = ["Date", "Description", "Amount"]
+    if not all(field in csv_reader.fieldnames for field in required_fields):
+        raise HTTPException(
+            status_code=400, 
+            detail=f"CSV must contain the following columns: {', '.join(required_fields)}"
+        )
+        
+    exception_count = 0
+    total_amount = 0.0
+    
+    from ...core.ledger import record_event_transaction
+    
+    for row in csv_reader:
+        try:
+            amount = float(row.get("Amount", 0))
+        except ValueError:
+            continue
+            
+        if amount <= 0:
+            continue # Only process incoming deposits
+            
+        description = row.get("Description", "")
+        
+        # Dump to manual review exceptions queue
+        record_event_transaction(
+            db=db,
+            school_id=current_user.school_id,
+            description=f"Manual Bank Deposit: {description}",
+            event_type="payment.exception",
+            provider="manual_bank_transfer",
+            amount=amount,
+            fallback_debit="Bank Account",
+            fallback_credit="Unreconciled Funds"
+        )
+        exception_count += 1
+        total_amount += amount
+        
+    db.commit()
+    
+    return {
+        "message": "Bank statement processed",
+        "processed_deposits": exception_count,
+        "total_amount": total_amount,
+        "exceptions_flagged": exception_count
+    }
+
+from typing import List
+
+@router.get("/posting-rules", response_model=List[schemas.PostingRule])
+def get_posting_rules(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin"]))
+):
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to a school")
+    return db.query(models.PostingRule).filter(models.PostingRule.school_id == current_user.school_id).all()
+
+@router.post("/posting-rules", response_model=schemas.PostingRule)
+def create_posting_rule(
+    rule_data: schemas.PostingRuleCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin"]))
+):
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to a school")
+        
+    rule = models.PostingRule(
+        event_type=rule_data.event_type,
+        provider=rule_data.provider,
+        debit_account_name=rule_data.debit_account_name,
+        credit_account_name=rule_data.credit_account_name,
+        school_id=current_user.school_id
+    )
+    db.add(rule)
+    db.commit()
+    db.refresh(rule)
+    return rule

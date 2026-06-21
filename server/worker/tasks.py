@@ -144,21 +144,49 @@ def handle_payment_received(payload: dict, school_id: int):
             total_paid = sum(p.amount for p in invoice.payment_attempts if p.status == "success")
             total_amount = sum(item.amount for item in invoice.line_items)
             
-            if total_paid >= total_amount:
+            if total_paid > total_amount:
                 invoice.status = "paid"
-            else:
-                invoice.status = "partial"
+                excess_amount = total_paid - total_amount
                 
-            record_event_transaction(
-                db=db,
-                school_id=school_id,
-                description=description,
-                event_type="payment.received",
-                provider=provider,
-                amount=amount,
-                fallback_debit="Bank Account",
-                fallback_credit="School Revenue"
-            )
+                invoice_portion = amount - excess_amount
+                
+                if invoice_portion > 0:
+                    record_event_transaction(
+                        db=db, school_id=school_id, description=description,
+                        event_type="payment.received", provider=provider, amount=invoice_portion,
+                        fallback_debit="Bank Account", fallback_credit="School Revenue"
+                    )
+                
+                # Overpayment logic
+                record_event_transaction(
+                    db=db, school_id=school_id, description=f"{description} (Overpayment Wallet Credit)",
+                    event_type="payment.overpayment", provider=provider, amount=excess_amount,
+                    fallback_debit="Bank Account", fallback_credit="Parent Wallet"
+                )
+                
+                # Flag for manual review in the Exception Queue (Unreconciled Funds)
+                record_event_transaction(
+                    db=db, school_id=school_id, description=f"Exception: Overpayment Review [REF:EXC-OVP-{transaction_id}]",
+                    event_type="payment.exception", provider=provider, amount=excess_amount,
+                    fallback_debit="Parent Wallet", fallback_credit="Unreconciled Funds"
+                )
+                print(f"[EVENT HANDLER] Overpayment of ${excess_amount} detected and flagged.")
+            else:
+                if total_paid == total_amount:
+                    invoice.status = "paid"
+                else:
+                    invoice.status = "partial"
+                    
+                record_event_transaction(
+                    db=db,
+                    school_id=school_id,
+                    description=description,
+                    event_type="payment.received",
+                    provider=provider,
+                    amount=amount,
+                    fallback_debit="Bank Account",
+                    fallback_credit="School Revenue"
+                )
             print(f"[EVENT HANDLER] Successfully matched transaction {transaction_id} to Invoice {invoice.id} and recorded ledger.")
         else:
             # Exception Handling: No matching payment attempt found
@@ -372,10 +400,24 @@ def sweep_overdue_invoices():
     db = SessionLocal()
     try:
         now = datetime.now(timezone.utc)
-        overdue_invoices = db.query(Invoice).filter(
-            Invoice.status.in_(["pending", "partial"]),
-            Invoice.due_date < now
+        invoices = db.query(Invoice).filter(
+            Invoice.status.in_(["pending", "partial"])
         ).all()
+        
+        overdue_invoices = []
+        for inv in invoices:
+            is_overdue = False
+            if inv.installment_plan:
+                for inst in inv.installment_plan.installments:
+                    if inst.status == "pending" and inst.due_date < now:
+                        is_overdue = True
+                        break
+            else:
+                if inv.due_date < now:
+                    is_overdue = True
+                    
+            if is_overdue:
+                overdue_invoices.append(inv)
         
         count = 0
         for invoice in overdue_invoices:

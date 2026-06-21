@@ -88,6 +88,7 @@ class Invoice(Base):
     discount = relationship("Discount", back_populates="invoices")
     line_items = relationship("InvoiceLineItem", back_populates="invoice")
     payment_attempts = relationship("PaymentAttempt", back_populates="invoice")
+    installment_plan = relationship("InstallmentPlan", back_populates="invoice", uselist=False)
 
 class InvoiceLineItem(Base):
     __tablename__ = "invoice_line_items"
@@ -112,6 +113,48 @@ class PaymentAttempt(Base):
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 
     invoice = relationship("Invoice", back_populates="payment_attempts")
+
+class FeeTemplate(Base):
+    __tablename__ = "fee_templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String) # e.g. "Standard Grade 10 Tuition"
+    description = Column(String, nullable=True)
+    school_id = Column(Integer, ForeignKey("schools.id"))
+
+    line_items = relationship("FeeTemplateLineItem", back_populates="template")
+    school = relationship("School")
+
+class FeeTemplateLineItem(Base):
+    __tablename__ = "fee_template_line_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("fee_templates.id"))
+    title = Column(String)
+    amount = Column(Float)
+
+    template = relationship("FeeTemplate", back_populates="line_items")
+
+class InstallmentPlan(Base):
+    __tablename__ = "installment_plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    invoice_id = Column(Integer, ForeignKey("invoices.id"))
+    school_id = Column(Integer, ForeignKey("schools.id"))
+
+    invoice = relationship("Invoice", back_populates="installment_plan")
+    installments = relationship("Installment", back_populates="plan")
+
+class Installment(Base):
+    __tablename__ = "installments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    plan_id = Column(Integer, ForeignKey("installment_plans.id"))
+    amount_due = Column(Float)
+    due_date = Column(DateTime)
+    status = Column(String, default="pending") # pending, paid, overdue
+
+    plan = relationship("InstallmentPlan", back_populates="installments")
 
 class Discount(Base):
     __tablename__ = "discounts"
