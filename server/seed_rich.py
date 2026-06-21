@@ -360,6 +360,21 @@ def seed_rich_data():
     )
     db.add(res1)
 
+    # 10. Ledger Accounts and Bookkeeping Core Data
+    cash_acc = LedgerAccount(name="Cash at Bank", type="asset", school_id=school.id)
+    revenue_acc = LedgerAccount(name="Tuition Revenue", type="revenue", school_id=school.id)
+    receivables_acc = LedgerAccount(name="Accounts Receivable", type="asset", school_id=school.id)
+    db.add_all([cash_acc, revenue_acc, receivables_acc])
+    db.flush()
+
+    trx = LedgerTransaction(description=f"Registration Fee Payment - Dummy", school_id=school.id)
+    db.add(trx)
+    db.flush()
+
+    entry1 = LedgerEntry(transaction_id=trx.id, account_id=cash_acc.id, amount=300.0, type="debit")
+    entry2 = LedgerEntry(transaction_id=trx.id, account_id=revenue_acc.id, amount=300.0, type="credit")
+    db.add_all([entry1, entry2])
+
     db.commit()
 
     print("Rich database seed completed successfully.")

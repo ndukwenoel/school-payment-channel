@@ -241,7 +241,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.pie_chart, color: AppTheme.textMuted),
               title: Text(b['category'].toString()),
-              trailing: Text("?${b['amount'].toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              trailing: Text("₦${b['amount'].toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             )).toList(),
           ],
           
@@ -306,7 +306,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
             child: ListTile(
               leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 36),
               title: Text(exc['description'], style: const TextStyle(fontWeight: FontWeight.w500)),
-              subtitle: Text('Unreconciled Amount: ?${exc['amount']}'),
+              subtitle: Text('Unreconciled Amount: ₦${exc['amount']}'),
               trailing: ElevatedButton(
                 onPressed: () => _showResolveDialog(exc['id'], exc['description']),
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.blueVibrant, foregroundColor: AppTheme.textDark),
@@ -348,7 +348,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
               leading: const Icon(Icons.hourglass_bottom, color: Colors.redAccent),
               title: Text(b['bucket'], style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text("${b['invoice_ids'].length} invoices affected"),
-              trailing: Text("?${b['total_amount'].toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              trailing: Text("₦${b['total_amount'].toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, color: Colors.redAccent, fontWeight: FontWeight.bold)),
             ),
           )).toList(),
         ],

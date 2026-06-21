@@ -214,7 +214,7 @@ class _StaffRegistryPageState extends State<StaffRegistryPage> {
                           ],
                         ),
                         trailing: Text(
-                          '\$${staff['base_salary']?.toStringAsFixed(2) ?? '0.00'}',
+                          '₦${staff['base_salary']?.toStringAsFixed(2) ?? '0.00'}',
                           style: TextStyle(fontWeight: FontWeight.w500, color: Colors.grey[700]),
                         ),
                       ),

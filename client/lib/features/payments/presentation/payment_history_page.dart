@@ -54,7 +54,7 @@ class PaymentHistoryPage extends StatelessWidget {
                     style: const TextStyle(color: AppTheme.textMuted50, fontSize: 12),
                   ),
                   trailing: Text(
-                    "?${p.amountPaid.toStringAsFixed(2)}",
+                    "₦${p.amountPaid.toStringAsFixed(2)}",
                     style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.limeLight, fontSize: 16),
                   ),
                 ),

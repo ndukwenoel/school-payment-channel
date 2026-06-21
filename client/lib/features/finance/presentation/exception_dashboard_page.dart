@@ -53,7 +53,7 @@ class _ExceptionDashboardPageState extends State<ExceptionDashboardPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Resolve Exception'),
-        content: Text('How would you like to resolve the exception for "$description" (\$$amount)?'),
+        content: Text('How would you like to resolve the exception for "$description" (₦$amount)?'),
         actions: [
           TextButton(
             onPressed: () {
@@ -99,7 +99,7 @@ class _ExceptionDashboardPageState extends State<ExceptionDashboardPage> {
                       child: ListTile(
                         leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
                         title: Text(exc['description'] ?? 'Unknown Exception'),
-                        subtitle: Text('Amount: \$${exc['amount']}'),
+                        subtitle: Text('Amount: ₦${exc['amount']}'),
                         trailing: ElevatedButton(
                           onPressed: () => _showResolveDialog(exc['id'], exc['description'], exc['amount']),
                           child: const Text('Resolve'),
