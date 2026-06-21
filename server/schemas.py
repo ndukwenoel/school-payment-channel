@@ -429,6 +429,78 @@ class AcademicResource(AcademicResourceBase):
     class Config:
         from_attributes = True
 
+# --- CourseTest Schemas ---
+
+class CourseTestBase(BaseModel):
+    title: str
+    test_type: str  # "test", "exam", "ca", "quiz", "assignment"
+    max_score: float = 100.0
+    weight_percentage: Optional[float] = None
+    term: str
+    academic_year: str
+    date_administered: Optional[datetime] = None
+    subject_id: int
+    classroom_id: int
+    school_id: int
+
+class CourseTestCreate(CourseTestBase):
+    pass
+
+class CourseTest(CourseTestBase):
+    id: int
+    created_by: int
+
+    class Config:
+        from_attributes = True
+
+# --- TestResult Schemas ---
+
+class TestResultBase(BaseModel):
+    score: float
+    remarks: Optional[str] = None
+    test_id: int
+    student_id: int
+    school_id: int
+
+class TestResultCreate(TestResultBase):
+    pass
+
+class TestResult(TestResultBase):
+    id: int
+    recorded_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class SingleStudentResult(BaseModel):
+    student_id: int
+    score: float
+    remarks: Optional[str] = None
+
+class BulkTestResultCreate(BaseModel):
+    """Record scores for multiple students in a single call."""
+    results: List[SingleStudentResult]
+
+# --- StudentDocument Schemas ---
+
+class StudentDocumentBase(BaseModel):
+    title: str
+    document_type: str  # medical, academic, behavioral, identification, other
+    file_url: str
+    notes: Optional[str] = None
+    student_id: int
+
+class StudentDocumentCreate(StudentDocumentBase):
+    pass
+
+class StudentDocument(StudentDocumentBase):
+    id: int
+    uploaded_at: datetime
+    uploaded_by: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
 # --- Ledger Schemas ---
 
 class PostingRuleBase(BaseModel):

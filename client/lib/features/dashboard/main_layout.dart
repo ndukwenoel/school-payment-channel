@@ -18,9 +18,10 @@ class _MainLayoutState extends State<MainLayout> {
     if (location.startsWith('/erp/fees')) return 2;
     if (location.startsWith('/invoices')) return 3;
     if (location.startsWith('/erp/academic')) return 4;
-    if (location.startsWith('/erp/results')) return 5;
-    if (location.startsWith('/erp/payroll')) return 6;
-    if (location.startsWith('/erp/broadcasts')) return 7;
+    if (location.startsWith('/erp/tests')) return 5;
+    if (location.startsWith('/erp/results')) return 6;
+    if (location.startsWith('/erp/payroll')) return 7;
+    if (location.startsWith('/erp/broadcasts')) return 8;
     return 0; // Default fallback
   }
 
@@ -31,9 +32,10 @@ class _MainLayoutState extends State<MainLayout> {
       case 2: context.go('/erp/fees'); break;
       case 3: context.go('/invoices'); break;
       case 4: context.go('/erp/academic'); break;
-      case 5: context.go('/erp/results'); break;
-      case 6: context.go('/erp/payroll'); break;
-      case 7: context.go('/erp/broadcasts'); break;
+      case 5: context.go('/erp/tests'); break;
+      case 6: context.go('/erp/results'); break;
+      case 7: context.go('/erp/payroll'); break;
+      case 8: context.go('/erp/broadcasts'); break;
     }
   }
 
@@ -102,7 +104,8 @@ class _MainLayoutState extends State<MainLayout> {
                   const Text("ACADEMIC", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                   SizedBox(height: 12),
                   _NavItem(icon: Icons.menu_book, label: "Academics", isSelected: selectedIndex == 4, onTap: () => _onItemTapped(4)),
-                  _NavItem(icon: Icons.workspace_premium, label: "Results & Grades", isSelected: selectedIndex == 5, onTap: () => _onItemTapped(5)),
+                  _NavItem(icon: Icons.assignment_outlined, label: "Tests & Scores", isSelected: selectedIndex == 5, onTap: () => _onItemTapped(5)),
+                  _NavItem(icon: Icons.workspace_premium, label: "Results & Grades", isSelected: selectedIndex == 6, onTap: () => _onItemTapped(6)),
 
                   SizedBox(height: 32),
                   const Text("ADMIN", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),

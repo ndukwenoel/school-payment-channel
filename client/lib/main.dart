@@ -26,6 +26,8 @@ import 'features/erp/presentation/payroll_page.dart';
 import 'features/erp/presentation/results_page.dart';
 import 'features/erp/presentation/broadcast_page.dart';
 import 'features/erp/presentation/resource_pages.dart';
+import 'features/erp/presentation/course_tests_page.dart';
+import 'features/erp/presentation/test_results_entry_page.dart';
 import 'features/dashboard/screens/finance_dashboard_screen.dart';
 import 'features/dashboard/main_layout.dart';
 void main() {
@@ -144,6 +146,17 @@ class AppView extends StatelessWidget {
             GoRoute(
               path: '/erp/upload',
               builder: (context, state) => const ResourceUploadPage(),
+            ),
+            GoRoute(
+              path: '/erp/tests',
+              builder: (context, state) => const CourseTestsPage(),
+            ),
+            GoRoute(
+              path: '/erp/tests/entry',
+              builder: (context, state) {
+                final test = state.extra as Map<String, dynamic>;
+                return TestResultsEntryPage(test: test);
+              },
             ),
             GoRoute(
               path: '/erp/review',

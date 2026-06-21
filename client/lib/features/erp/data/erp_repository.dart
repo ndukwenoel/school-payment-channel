@@ -50,6 +50,60 @@ class ErpRepository {
     return response.data;
   }
 
+  // --- CourseTest ---
+  Future<List<dynamic>> getCourseTests({int? classroomId, int? subjectId}) async {
+    final params = <String, dynamic>{};
+    if (classroomId != null) params['classroom_id'] = classroomId;
+    if (subjectId != null) params['subject_id'] = subjectId;
+    final response = await apiClient.dio.get('/erp/academic/tests', queryParameters: params);
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getCourseTest(int testId) async {
+    final response = await apiClient.dio.get('/erp/academic/tests/$testId');
+    return response.data;
+  }
+
+  Future<void> createCourseTest(Map<String, dynamic> data) async {
+    await apiClient.dio.post('/erp/academic/tests', data: data);
+  }
+
+  Future<void> deleteCourseTest(int testId) async {
+    await apiClient.dio.delete('/erp/academic/tests/$testId');
+  }
+
+  // --- TestResult ---
+  Future<List<dynamic>> getTestResults(int testId) async {
+    final response = await apiClient.dio.get('/erp/academic/tests/$testId/results');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> recordBulkResults(
+    int testId,
+    List<Map<String, dynamic>> results,
+  ) async {
+    final response = await apiClient.dio.post(
+      '/erp/academic/tests/$testId/results/bulk',
+      data: {'results': results},
+    );
+    return response.data;
+  }
+
+  Future<List<dynamic>> getStudentTestResults(int studentId) async {
+    final response = await apiClient.dio.get('/erp/academic/students/$studentId/results');
+    return response.data;
+  }
+
+  // --- StudentDocument ---
+  Future<List<dynamic>> getStudentDocuments(int studentId) async {
+    final response = await apiClient.dio.get('/erp/academic/students/$studentId/documents');
+    return response.data;
+  }
+
+  Future<void> addStudentDocument(int studentId, Map<String, dynamic> data) async {
+    await apiClient.dio.post('/erp/academic/students/$studentId/documents', data: data);
+  }
+
   // --- HR ---
   Future<List<dynamic>> getStaff() async {
     final response = await apiClient.dio.get('/erp/hr/staff');

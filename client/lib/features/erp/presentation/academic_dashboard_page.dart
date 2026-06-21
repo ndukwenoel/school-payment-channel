@@ -26,6 +26,11 @@ class AcademicDashboardPage extends StatelessWidget {
               _buildSectionTitle("MY CLASSROOMS"),
               SizedBox(height: 16),
               _buildClassroomList(context),
+              SizedBox(height: 32),
+              _buildSectionTitle("COURSE TESTS"),
+              SizedBox(height: 16),
+              _buildCourseTestCard(context),
+
             ],
           ),
         ),
@@ -135,6 +140,59 @@ class AcademicDashboardPage extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _buildCourseTestCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/erp/tests'),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.limeLight.withOpacity(0.15),
+              AppTheme.blueVibrant.withOpacity(0.10),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.limeLight.withOpacity(0.25)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.limeLight.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.assignment_outlined,
+                  color: AppTheme.limeLight, size: 24),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Manage Course Tests',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Colors.white)),
+                  SizedBox(height: 4),
+                  Text('Create tests, enter scores & view rankings',
+                      style: TextStyle(
+                          color: AppTheme.textMuted50, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios,
+                color: AppTheme.limeLight, size: 16),
+          ],
+        ),
+      ),
     );
   }
 }

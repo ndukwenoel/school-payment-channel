@@ -57,6 +57,8 @@ class Student(Base):
     attendance_records = relationship("Attendance", back_populates="student")
     grades = relationship("GradeRecord", back_populates="student")
     virtual_accounts = relationship("VirtualAccount", back_populates="student")
+    documents = relationship("StudentDocument", back_populates="student")
+    test_results = relationship("TestResult", back_populates="student")
 
 class VirtualAccount(Base):
     __tablename__ = "virtual_accounts"
@@ -210,11 +212,70 @@ class Attendance(Base):
     id = Column(Integer, primary_key=True, index=True)
     date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     status = Column(String) # present, absent, late
+    remarks = Column(String, nullable=True) # optional teacher notes
     student_id = Column(Integer, ForeignKey("students.id"))
+    classroom_id = Column(Integer, ForeignKey("classrooms.id"), nullable=True)
     school_id = Column(Integer, ForeignKey("schools.id"))
 
     student = relationship("Student", back_populates="attendance_records")
     school = relationship("School", back_populates="attendance_records")
+
+
+class StudentDocument(Base):
+    """Stores links/references to student-related documents (medical, academic, behavioral)."""
+    __tablename__ = "student_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    document_type = Column(String) # medical, academic, behavioral, identification, other
+    file_url = Column(String)
+    notes = Column(String, nullable=True)
+    uploaded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    student_id = Column(Integer, ForeignKey("students.id"))
+    uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    student = relationship("Student", back_populates="documents")
+    uploader = relationship("User")
+
+
+class CourseTest(Base):
+    """Represents a specific test/CA/exam created by a teacher for a subject & classroom."""
+    __tablename__ = "course_tests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)         # e.g. "Test 1", "Mid-Term Exam", "Final Exam"
+    test_type = Column(String)     # "test", "exam", "ca", "quiz", "assignment"
+    max_score = Column(Float, default=100.0)
+    weight_percentage = Column(Float, nullable=True)  # e.g. 30 (for 30% of final grade)
+    term = Column(String)          # e.g. "First Term"
+    academic_year = Column(String) # e.g. "2025/2026"
+    date_administered = Column(DateTime, nullable=True)
+    subject_id = Column(Integer, ForeignKey("subjects.id"))
+    classroom_id = Column(Integer, ForeignKey("classrooms.id"))
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    created_by = Column(Integer, ForeignKey("users.id"))  # teacher
+
+    subject = relationship("Subject")
+    classroom = relationship("ClassRoom")
+    school = relationship("School")
+    teacher = relationship("User")
+    results = relationship("TestResult", back_populates="course_test")
+
+
+class TestResult(Base):
+    """Stores an individual student's score for a specific CourseTest."""
+    __tablename__ = "test_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    score = Column(Float)
+    remarks = Column(String, nullable=True)  # e.g. "Excellent", "Needs improvement"
+    test_id = Column(Integer, ForeignKey("course_tests.id"))
+    student_id = Column(Integer, ForeignKey("students.id"))
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    recorded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    course_test = relationship("CourseTest", back_populates="results")
+    student = relationship("Student", back_populates="test_results")
 
 class GradeRecord(Base):
     __tablename__ = "grade_records"
