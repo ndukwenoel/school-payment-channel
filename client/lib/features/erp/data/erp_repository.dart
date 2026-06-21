@@ -114,6 +114,10 @@ class ErpRepository {
     await apiClient.dio.post('/erp/hr/staff', data: data);
   }
 
+  Future<void> createStaffAndUser(Map<String, dynamic> data) async {
+    await apiClient.dio.post('/erp/hr/staff/admin', data: data);
+  }
+
   Future<void> generatePayroll(String month, int year) async {
     await apiClient.dio.post('/erp/hr/payroll/generate', queryParameters: {
       'month': month,
@@ -155,5 +159,19 @@ class ErpRepository {
 
   Future<void> updateResourceStatus(int id, String status) async {
     await apiClient.dio.put('/erp/collaboration/resources/$id/status?status=$status');
+  }
+
+  // --- Student Registry ---
+  Future<List<dynamic>> getStudents() async {
+    final response = await apiClient.dio.get('/students/');
+    return response.data;
+  }
+
+  Future<void> createStudent(Map<String, dynamic> data) async {
+    await apiClient.dio.post('/students/admin', data: data);
+  }
+
+  Future<void> updateStudent(int id, Map<String, dynamic> data) async {
+    await apiClient.dio.patch('/students/$id', data: data);
   }
 }

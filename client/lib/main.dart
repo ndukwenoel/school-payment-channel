@@ -28,6 +28,8 @@ import 'features/erp/presentation/broadcast_page.dart';
 import 'features/erp/presentation/resource_pages.dart';
 import 'features/erp/presentation/course_tests_page.dart';
 import 'features/erp/presentation/test_results_entry_page.dart';
+import 'features/erp/presentation/student_registry_page.dart';
+import 'features/erp/presentation/staff_registry_page.dart';
 import 'features/dashboard/screens/finance_dashboard_screen.dart';
 import 'features/dashboard/main_layout.dart';
 void main() {
@@ -138,6 +140,14 @@ class AppView extends StatelessWidget {
             GoRoute(
               path: '/erp/results',
               builder: (context, state) => const ResultsPage(),
+            ),
+            GoRoute(
+              path: '/erp/students',
+              builder: (context, state) => const StudentRegistryPage(),
+            ),
+            GoRoute(
+              path: '/erp/staff',
+              builder: (context, state) => const StaffRegistryPage(),
             ),
             GoRoute(
               path: '/erp/broadcasts',

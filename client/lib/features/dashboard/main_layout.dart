@@ -20,8 +20,10 @@ class _MainLayoutState extends State<MainLayout> {
     if (location.startsWith('/erp/academic')) return 4;
     if (location.startsWith('/erp/tests')) return 5;
     if (location.startsWith('/erp/results')) return 6;
+    if (location.startsWith('/erp/students')) return 9;
     if (location.startsWith('/erp/payroll')) return 7;
     if (location.startsWith('/erp/broadcasts')) return 8;
+    if (location.startsWith('/erp/staff')) return 10;
     return 0; // Default fallback
   }
 
@@ -36,6 +38,8 @@ class _MainLayoutState extends State<MainLayout> {
       case 6: context.go('/erp/results'); break;
       case 7: context.go('/erp/payroll'); break;
       case 8: context.go('/erp/broadcasts'); break;
+      case 9: context.go('/erp/students'); break;
+      case 10: context.go('/erp/staff'); break;
     }
   }
 
@@ -104,14 +108,16 @@ class _MainLayoutState extends State<MainLayout> {
                   const Text("ACADEMIC", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                   SizedBox(height: 12),
                   _NavItem(icon: Icons.menu_book, label: "Academics", isSelected: selectedIndex == 4, onTap: () => _onItemTapped(4)),
+                  _NavItem(icon: Icons.people_outline, label: "Student Registry", isSelected: selectedIndex == 9, onTap: () => _onItemTapped(9)),
                   _NavItem(icon: Icons.assignment_outlined, label: "Tests & Scores", isSelected: selectedIndex == 5, onTap: () => _onItemTapped(5)),
                   _NavItem(icon: Icons.workspace_premium, label: "Results & Grades", isSelected: selectedIndex == 6, onTap: () => _onItemTapped(6)),
 
                   SizedBox(height: 32),
                   const Text("ADMIN", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                   SizedBox(height: 12),
-                  _NavItem(icon: Icons.badge, label: "HR & Payroll", isSelected: selectedIndex == 6, onTap: () => _onItemTapped(6)),
-                  _NavItem(icon: Icons.campaign, label: "Broadcasts", isSelected: selectedIndex == 7, onTap: () => _onItemTapped(7)),
+                  _NavItem(icon: Icons.badge, label: "Staff Registry", isSelected: selectedIndex == 10, onTap: () => _onItemTapped(10)),
+                  _NavItem(icon: Icons.account_balance_wallet, label: "HR & Payroll", isSelected: selectedIndex == 7, onTap: () => _onItemTapped(7)),
+                  _NavItem(icon: Icons.campaign, label: "Broadcasts", isSelected: selectedIndex == 8, onTap: () => _onItemTapped(8)),
                 ],
               ),
             ),

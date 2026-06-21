@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from pydantic import BaseModel
 from ... import database, models, schemas
 from .auth import get_db, CheckRole
 
@@ -9,7 +10,7 @@ router = APIRouter(
     tags=["ERP HR"]
 )
 
-@router.post("/staff", response_model=schemas.StaffProfile)
+@router.post("/staff", response_model=schemas.StaffWithUser)
 def create_staff_profile(
     staff: schemas.StaffProfileCreate,
     db: Session = Depends(get_db),
@@ -18,18 +19,83 @@ def create_staff_profile(
     if staff.school_id != current_user.school_id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized for this school")
     
-    new_staff = models.StaffProfile(**staff.model_dump())
+    new_staff = models.StaffProfile(**staff.dict())
     db.add(new_staff)
     db.commit()
     db.refresh(new_staff)
-    return new_staff
+    
+    # Map user fields
+    s_dict = new_staff.__dict__.copy()
+    if new_staff.user:
+        s_dict["full_name"] = new_staff.user.full_name
+        s_dict["email"] = new_staff.user.email
+    return s_dict
 
-@router.get("/staff", response_model=List[schemas.StaffProfile])
+@router.get("/staff", response_model=List[schemas.StaffWithUser])
 def get_staff_list(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(CheckRole(["admin", "school_admin"]))
 ):
-    return db.query(models.StaffProfile).filter(models.StaffProfile.school_id == current_user.school_id).all()
+    staff_list = db.query(models.StaffProfile).filter(models.StaffProfile.school_id == current_user.school_id).all()
+    result = []
+    for s in staff_list:
+        s_dict = s.__dict__.copy()
+        if s.user:
+            s_dict["full_name"] = s.user.full_name
+            s_dict["email"] = s.user.email
+        result.append(s_dict)
+    return result
+
+class StaffCreateAdmin(BaseModel):
+    employee_id: str
+    designation: str
+    base_salary: float = 0.0
+    email: str
+    full_name: str
+
+@router.post("/staff/admin", response_model=schemas.StaffWithUser)
+def create_staff_and_user(
+    staff_data: StaffCreateAdmin,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin"]))
+):
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to school")
+
+    # Check or create User
+    user = db.query(models.User).filter(models.User.email == staff_data.email).first()
+    if not user:
+        from ..security import get_password_hash
+        user = models.User(
+            email=staff_data.email,
+            hashed_password=get_password_hash("password123"),
+            full_name=staff_data.full_name,
+            role="teacher",
+            school_id=current_user.school_id
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    existing = db.query(models.StaffProfile).filter(models.StaffProfile.employee_id == staff_data.employee_id, models.StaffProfile.school_id == current_user.school_id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Employee ID already exists")
+
+    new_staff = models.StaffProfile(
+        employee_id=staff_data.employee_id,
+        designation=staff_data.designation,
+        base_salary=staff_data.base_salary,
+        user_id=user.id,
+        school_id=current_user.school_id
+    )
+    db.add(new_staff)
+    db.commit()
+    db.refresh(new_staff)
+
+    s_dict = new_staff.__dict__.copy()
+    s_dict["full_name"] = user.full_name
+    s_dict["email"] = user.email
+    return s_dict
 
 @router.post("/payroll", response_model=schemas.Payroll)
 def generate_payroll(

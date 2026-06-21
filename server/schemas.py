@@ -28,13 +28,51 @@ class StudentBase(BaseModel):
     enrollment_number: str
     full_name: str
     grade: str
+    date_of_birth: Optional[datetime] = None
+    gender: Optional[str] = None
+    profile_picture_url: Optional[str] = None
+    home_address: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    blood_group: Optional[str] = None
+    genotype: Optional[str] = None
+    allergies: Optional[str] = None
+    medical_conditions: Optional[str] = None
+    admission_date: Optional[datetime] = None
+    status: str = "active"
 
 class StudentCreate(StudentBase):
     parent_id: int
 
+class StudentCreateAdmin(StudentBase):
+    """Admin-friendly create — auto-creates a parent user from email."""
+    parent_email: str
+    classroom_id: Optional[int] = None
+
+class StudentUpdate(BaseModel):
+    """PATCH payload — all fields optional."""
+    full_name: Optional[str] = None
+    grade: Optional[str] = None
+    classroom_id: Optional[int] = None
+    date_of_birth: Optional[datetime] = None
+    gender: Optional[str] = None
+    profile_picture_url: Optional[str] = None
+    home_address: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    blood_group: Optional[str] = None
+    genotype: Optional[str] = None
+    allergies: Optional[str] = None
+    medical_conditions: Optional[str] = None
+    admission_date: Optional[datetime] = None
+    status: Optional[str] = None
+
 class Student(StudentBase):
     id: int
     parent_id: int
+    school_id: Optional[int] = None
+    classroom_id: Optional[int] = None
+    classroom_name: Optional[str] = None  # computed from relationship
 
     class Config:
         from_attributes = True
@@ -319,6 +357,24 @@ class StaffProfileCreate(StaffProfileBase):
 
 class StaffProfile(StaffProfileBase):
     id: int
+    class Config:
+        from_attributes = True
+
+class StaffWithUser(StaffProfileBase):
+    """Staff profile enriched with linked user info."""
+    id: int
+    full_name: Optional[str] = None   # from User.full_name
+    email: Optional[str] = None        # from User.email
+
+    class Config:
+        from_attributes = True
+
+class StaffWithUser(StaffProfileBase):
+    """Staff profile enriched with linked user info."""
+    id: int
+    full_name: Optional[str] = None   # from User.full_name
+    email: Optional[str] = None        # from User.email
+
     class Config:
         from_attributes = True
 

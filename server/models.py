@@ -45,6 +45,21 @@ class Student(Base):
     enrollment_number = Column(String, unique=True, index=True)
     full_name = Column(String)
     grade = Column(String)
+    
+    # Comprehensive profile fields
+    date_of_birth = Column(DateTime, nullable=True)
+    gender = Column(String, nullable=True)
+    profile_picture_url = Column(String, nullable=True)
+    home_address = Column(String, nullable=True)
+    emergency_contact_name = Column(String, nullable=True)
+    emergency_contact_phone = Column(String, nullable=True)
+    blood_group = Column(String, nullable=True)
+    genotype = Column(String, nullable=True)
+    allergies = Column(String, nullable=True)
+    medical_conditions = Column(String, nullable=True)
+    admission_date = Column(DateTime, nullable=True)
+    status = Column(String, default="active") # active, suspended, graduated, transferred
+    
     parent_id = Column(Integer, ForeignKey("users.id"))
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 

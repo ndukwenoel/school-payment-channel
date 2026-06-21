@@ -4,7 +4,10 @@ from server.database import SessionLocal
 from server.models import (
     User, School, Student, ClassRoom, Subject,
     Attendance, GradeRecord, Invoice, InvoiceLineItem, VirtualAccount,
-    FeeTemplate, FeeTemplateLineItem
+    FeeTemplate, FeeTemplateLineItem,
+    CourseTest, TestResult, StaffProfile, Payroll, InventoryItem,
+    Broadcast, AcademicResource,
+    Role, Permission, RolePermission, AuditLog, LedgerAccount, LedgerTransaction, LedgerEntry, PostingRule
 )
 from server.security import get_password_hash
 
@@ -12,30 +15,74 @@ def seed_rich_data():
     db = SessionLocal()
     
     # 1. School & Admin
-    admin = db.query(User).filter(User.email == "admin@school.com").first()
     school = db.query(School).filter(School.name == "Greenwood High").first()
-    
     if not school:
+        school = School(name="Greenwood High")
+        db.add(school)
+        db.commit()
+        db.refresh(school)
+        
+    admin = db.query(User).filter(User.email == "admin@school.com").first()
+    if not admin:
         admin = User(
             email="admin@school.com",
             hashed_password=get_password_hash("password123"),
             full_name="System Admin",
-            role="admin"
+            role="admin",
+            school_id=school.id
         )
         db.add(admin)
         db.commit()
         db.refresh(admin)
         
-        school = School(
-            name="Greenwood High",
-            admin_id=admin.id,
-            subscription_plan="premium"
-        )
-        db.add(school)
-        db.commit()
-        db.refresh(school)
-        
     print("School ensured:", school.name)
+
+    # 1.5 Core Data (RBAC, Ledger, PostingRules)
+    print("Seeding Core Data (RBAC & Ledger)...")
+    
+    # RBAC
+    permissions_data = ["can_create_fee", "can_view_reports", "can_edit_grades"]
+    for p_name in permissions_data:
+        p = db.query(Permission).filter(Permission.name == p_name).first()
+        if not p:
+            p = Permission(name=p_name)
+            db.add(p)
+    db.commit()
+
+    roles_data = ["bursar", "principal", "teacher"]
+    for r_name in roles_data:
+        r = db.query(Role).filter(Role.name == r_name, Role.school_id == school.id).first()
+        if not r:
+            r = Role(name=r_name, school_id=school.id)
+            db.add(r)
+    db.commit()
+
+    # Ledger Accounts
+    accounts_data = [
+        ("School Revenue", "revenue"),
+        ("Cash in Bank", "asset"),
+        ("Parent Wallet", "liability"),
+        ("Salary Expense", "expense")
+    ]
+    for acc_name, acc_type in accounts_data:
+        acc = db.query(LedgerAccount).filter(LedgerAccount.name == acc_name, LedgerAccount.school_id == school.id).first()
+        if not acc:
+            acc = LedgerAccount(name=acc_name, type=acc_type, school_id=school.id)
+            db.add(acc)
+    db.commit()
+
+    # Posting Rules
+    rules_data = [
+        ("payment.received", "paystack", "Cash in Bank", "School Revenue"),
+        ("payment.refund", "paystack", "School Revenue", "Cash in Bank")
+    ]
+    for event, provider, debit, credit in rules_data:
+        pr = db.query(PostingRule).filter(PostingRule.event_type == event, PostingRule.provider == provider, PostingRule.school_id == school.id).first()
+        if not pr:
+            pr = PostingRule(event_type=event, provider=provider, debit_account_name=debit, credit_account_name=credit, school_id=school.id)
+            db.add(pr)
+    db.commit()
+
 
     # 2. Subjects
     subjects_data = [
@@ -80,7 +127,8 @@ def seed_rich_data():
             email=parent_email,
             hashed_password=get_password_hash("password123"),
             full_name="Rich Parent",
-            role="parent"
+            role="parent",
+            school_id=school.id
         )
         db.add(parent)
         db.commit()
@@ -187,8 +235,136 @@ def seed_rich_data():
             
             db.commit()
 
+    print("Generating Staff, Payroll, Course Tests, Inventory, and Broadcasts...")
+    
+    # 6. Staff & Payroll
+    staff_roles = [
+        ("Mr. Anderson", "teacher_anderson@school.com", "Teacher", 4000.0),
+        ("Mrs. Smith", "teacher_smith@school.com", "Teacher", 4200.0),
+        ("Dr. Brown", "teacher_brown@school.com", "Senior Teacher", 5000.0),
+        ("Mr. Green", "accountant@school.com", "Accountant", 4500.0),
+    ]
+    staff_profiles = []
+    for i, (name, email, role, salary) in enumerate(staff_roles):
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            user = User(
+                email=email,
+                hashed_password=get_password_hash("password123"),
+                full_name=name,
+                role="teacher" if "Teacher" in role else "admin",
+                school_id=school.id
+            )
+            db.add(user)
+            db.flush()
+        
+        staff = db.query(StaffProfile).filter(StaffProfile.user_id == user.id).first()
+        if not staff:
+            staff = StaffProfile(
+                employee_id=f"EMP-2026-{i+10}",
+                designation=role,
+                base_salary=salary,
+                user_id=user.id,
+                school_id=school.id
+            )
+            db.add(staff)
+            db.flush()
+            
+            # Payroll for last month
+            payroll = Payroll(
+                month="May",
+                year=now.year,
+                base_salary=salary,
+                bonuses=200.0 if "Senior" in role else 0.0,
+                deductions=50.0,
+                net_pay=salary + (200.0 if "Senior" in role else 0.0) - 50.0,
+                staff_id=staff.id,
+                school_id=school.id
+            )
+            db.add(payroll)
+        staff_profiles.append(staff)
+
+    # 7. Course Tests & Results
+    students = db.query(Student).filter(Student.school_id == school.id).all()
+    for classroom in classrooms:
+        for subj in subjects[:2]: # Only for a couple subjects to save time
+            ct = CourseTest(
+                title=f"Mid-Term {subj.name}",
+                test_type="exam",
+                max_score=100.0,
+                weight_percentage=40.0,
+                term="Term 1",
+                academic_year="2025/2026",
+                date_administered=now - timedelta(days=10),
+                subject_id=subj.id,
+                classroom_id=classroom.id,
+                school_id=school.id,
+                created_by=admin.id
+            )
+            db.add(ct)
+            db.flush()
+            
+            # Add results for students in this classroom
+            class_students = [s for s in students if s.classroom_id == classroom.id]
+            for s in class_students:
+                score = random.uniform(40.0, 98.0)
+                remarks = "Excellent" if score > 80 else "Needs improvement" if score < 50 else "Good"
+                res = TestResult(
+                    score=score,
+                    remarks=remarks,
+                    test_id=ct.id,
+                    student_id=s.id,
+                    school_id=school.id
+                )
+                db.add(res)
+                
+    # 8. Inventory Items
+    inventory_data = [
+        ("Whiteboard Markers (Box)", "Stationery", 50, 15.0),
+        ("A4 Printing Paper (Ream)", "Stationery", 200, 25.0),
+        ("Microscopes", "Lab Equipment", 10, 450.0),
+        ("Laptops (Staff)", "Electronics", 25, 800.0),
+    ]
+    for name, cat, qty, price in inventory_data:
+        item = InventoryItem(
+            name=name,
+            category=cat,
+            quantity=qty,
+            unit_price=price,
+            school_id=school.id
+        )
+        db.add(item)
+        
+    # 9. Broadcasts & Academic Resources
+    bcast1 = Broadcast(
+        title="Welcome to the New Academic Year!",
+        message="We are thrilled to welcome all students back to Greenwood High. Classes begin promptly.",
+        type="newsletter",
+        school_id=school.id
+    )
+    bcast2 = Broadcast(
+        title="Upcoming PTA Meeting",
+        message="Please be reminded of the general PTA meeting scheduled for this Friday.",
+        type="event",
+        school_id=school.id
+    )
+    db.add(bcast1)
+    db.add(bcast2)
+    
+    res1 = AcademicResource(
+        title="Grade 10 Mathematics Syllabus",
+        file_url="https://example.com/syllabus.pdf",
+        type="note",
+        school_id=school.id,
+        teacher_id=admin.id
+    )
+    db.add(res1)
+
+    db.commit()
+
     print("Rich database seed completed successfully.")
     print("New Parent login: richparent@school.com / password123")
+    print("New Teacher login: teacher_smith@school.com / password123")
     db.close()
 
 if __name__ == "__main__":

@@ -24,7 +24,119 @@ def read_students(
          raise HTTPException(status_code=400, detail="User does not belong to a school")
     
     students = db.query(models.Student).filter(models.Student.school_id == current_user.school_id).offset(skip).limit(limit).all()
-    return students
+    
+    result = []
+    for s in students:
+        s_dict = s.__dict__.copy()
+        if s.classroom:
+            s_dict["classroom_name"] = s.classroom.name
+        result.append(s_dict)
+    return result
+
+@router.get("/{student_id}", response_model=schemas.Student)
+def get_student(
+    student_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    if current_user.school_id is None:
+         raise HTTPException(status_code=400, detail="User does not belong to a school")
+         
+    student = db.query(models.Student).filter(models.Student.id == student_id, models.Student.school_id == current_user.school_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    s_dict = student.__dict__.copy()
+    if student.classroom:
+        s_dict["classroom_name"] = student.classroom.name
+    return s_dict
+
+@router.patch("/{student_id}", response_model=schemas.Student)
+def update_student(
+    student_id: int,
+    updates: schemas.StudentUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin"]))
+):
+    if current_user.school_id is None:
+         raise HTTPException(status_code=400, detail="User does not belong to a school")
+         
+    student = db.query(models.Student).filter(models.Student.id == student_id, models.Student.school_id == current_user.school_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    if updates.full_name is not None:
+        student.full_name = updates.full_name
+    if updates.grade is not None:
+        student.grade = updates.grade
+    if updates.classroom_id is not None:
+        # verify classroom exists
+        room = db.query(models.ClassRoom).filter(models.ClassRoom.id == updates.classroom_id, models.ClassRoom.school_id == current_user.school_id).first()
+        if not room:
+            raise HTTPException(status_code=400, detail="Invalid classroom_id")
+        student.classroom_id = updates.classroom_id
+
+    db.commit()
+    db.refresh(student)
+    
+    s_dict = student.__dict__.copy()
+    if student.classroom:
+        s_dict["classroom_name"] = student.classroom.name
+    return s_dict
+
+@router.post("/admin", response_model=schemas.Student)
+def create_admin_student(
+    student_in: schemas.StudentCreateAdmin,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin"]))
+):
+    if current_user.school_id is None:
+         raise HTTPException(status_code=400, detail="User does not belong to a school")
+
+    existing = db.query(models.Student).filter(
+        models.Student.enrollment_number == student_in.enrollment_number,
+        models.Student.school_id == current_user.school_id
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Enrollment number already exists in this school")
+
+    # Get or create parent
+    parent = db.query(models.User).filter(models.User.email == student_in.parent_email).first()
+    if not parent:
+        from ..security import get_password_hash
+        parent = models.User(
+            email=student_in.parent_email, 
+            hashed_password=get_password_hash("password123"),
+            full_name="Parent of " + student_in.full_name,
+            role="parent",
+            school_id=current_user.school_id
+        )
+        db.add(parent)
+        db.commit()
+        db.refresh(parent)
+        
+    # Verify classroom
+    if student_in.classroom_id:
+        room = db.query(models.ClassRoom).filter(models.ClassRoom.id == student_in.classroom_id, models.ClassRoom.school_id == current_user.school_id).first()
+        if not room:
+            raise HTTPException(status_code=400, detail="Invalid classroom_id")
+
+    db_student = models.Student(
+        enrollment_number=student_in.enrollment_number,
+        full_name=student_in.full_name,
+        grade=student_in.grade,
+        parent_id=parent.id,
+        classroom_id=student_in.classroom_id,
+        school_id=current_user.school_id
+    )
+    db.add(db_student)
+    db.commit()
+    db.refresh(db_student)
+    
+    s_dict = db_student.__dict__.copy()
+    if db_student.classroom:
+        s_dict["classroom_name"] = db_student.classroom.name
+    return s_dict
 
 @router.post("/", response_model=schemas.Student)
 def create_student(

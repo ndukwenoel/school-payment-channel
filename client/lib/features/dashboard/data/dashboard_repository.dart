@@ -31,7 +31,46 @@ class Student {
   @JsonKey(name: 'parent_id')
   final int parentId;
 
-  Student({required this.id, required this.enrollmentNumber, required this.fullName, required this.grade, required this.parentId});
+  @JsonKey(name: 'date_of_birth')
+  final DateTime? dateOfBirth;
+  final String? gender;
+  @JsonKey(name: 'profile_picture_url')
+  final String? profilePictureUrl;
+  @JsonKey(name: 'home_address')
+  final String? homeAddress;
+  @JsonKey(name: 'emergency_contact_name')
+  final String? emergencyContactName;
+  @JsonKey(name: 'emergency_contact_phone')
+  final String? emergencyContactPhone;
+  @JsonKey(name: 'blood_group')
+  final String? bloodGroup;
+  final String? genotype;
+  final String? allergies;
+  @JsonKey(name: 'medical_conditions')
+  final String? medicalConditions;
+  @JsonKey(name: 'admission_date')
+  final DateTime? admissionDate;
+  final String? status;
+
+  Student({
+    required this.id, 
+    required this.enrollmentNumber, 
+    required this.fullName, 
+    required this.grade, 
+    required this.parentId,
+    this.dateOfBirth,
+    this.gender,
+    this.profilePictureUrl,
+    this.homeAddress,
+    this.emergencyContactName,
+    this.emergencyContactPhone,
+    this.bloodGroup,
+    this.genotype,
+    this.allergies,
+    this.medicalConditions,
+    this.admissionDate,
+    this.status,
+  });
 
   factory Student.fromJson(Map<String, dynamic> json) => _$StudentFromJson(json);
   Map<String, dynamic> toJson() => _$StudentToJson(this);
