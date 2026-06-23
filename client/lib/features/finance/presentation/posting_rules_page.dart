@@ -27,7 +27,8 @@ class _PostingRulesPageState extends State<PostingRulesPage> {
   Future<void> _fetchRules() async {
     setState(() => _isLoading = true);
     try {
-      final data = await ApiClient.get('/finance/posting-rules');
+      final response = await ApiClient().dio.get('/finance/posting-rules');
+      final data = response.data;
       setState(() {
         _rules = data;
         _isLoading = false;
@@ -45,7 +46,7 @@ class _PostingRulesPageState extends State<PostingRulesPage> {
     _formKey.currentState!.save();
 
     try {
-      await ApiClient.post('/finance/posting-rules', data: {
+      await ApiClient().dio.post('/finance/posting-rules', data: {
         'event_type': _eventType,
         'provider': _provider?.isEmpty ?? true ? null : _provider,
         'debit_account_name': _debitAccount,

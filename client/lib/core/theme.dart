@@ -24,6 +24,9 @@ class AppTheme {
   static const Color limeLight = sageGreenLight;
   static const Color bluePale = sageGreenLight;
   static const Color greenDeep = sageGreen;
+  static const Color surfaceDark = Color(0xFF222222);
+  static const Color orangeAccent = Colors.orangeAccent;
+  static const Color purpleDeep = Colors.deepPurple;
 
   static ThemeData get lightTheme {
     return ThemeData.light().copyWith(

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from ... import database, models, schemas
 from datetime import datetime, timezone
-from .auth import get_db, get_current_user
+from .auth import get_db, get_current_user, CheckRole
 from ...core.rbac import requires_permission
 from ...services.collection import CollectionService
 
@@ -195,7 +195,7 @@ def create_installment_plan(
     db.refresh(plan)
     return plan
 
-@router.post("/{invoice_id}/plan-requests", response_model=schemas.PaymentPlanRequest)
+@router.post("/{invoice_id}/plan-requests", response_model=schemas.PaymentPlanRequestResponse)
 def request_payment_plan(
     invoice_id: int,
     request_data: schemas.PaymentPlanRequestCreate,
@@ -224,7 +224,7 @@ def request_payment_plan(
     db.refresh(plan_request)
     return plan_request
 
-@router.get("/plan-requests/all", response_model=List[schemas.PaymentPlanRequest])
+@router.get("/plan-requests/all", response_model=List[schemas.PaymentPlanRequestResponse])
 def list_plan_requests(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin"]))

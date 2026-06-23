@@ -110,7 +110,7 @@ class _StaffRegistryPageState extends State<StaffRegistryPage> {
                 Navigator.pop(ctx);
                 
                 try {
-                  await context.read<ErpRepository>().createStaffAndUser({
+                  await context.read<ErpRepository>().createStaff({
                     'full_name': fullName,
                     'email': email,
                     'employee_id': employeeId,
