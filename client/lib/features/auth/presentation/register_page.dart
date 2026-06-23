@@ -15,6 +15,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  String _role = 'admin';
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -22,13 +23,11 @@ class _RegisterPageState extends State<RegisterPage> {
     return Scaffold(
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-           if (state is AuthError) {
-             if (state.message.contains('successful')) {
-               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
-               context.go('/');
-             } else {
-               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
-             }
+           if (state is AuthRegistered) {
+             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Registration successful. Please login.")));
+             context.go('/');
+           } else if (state is AuthError) {
+             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
            }
         },
         child: Center(
@@ -71,6 +70,16 @@ class _RegisterPageState extends State<RegisterPage> {
                           obscureText: true,
                           validator: (value) => value!.isEmpty ? 'Enter password' : null,
                         ),
+                        SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _role,
+                          dropdownColor: AppTheme.surfaceLight,
+                          decoration: const InputDecoration(labelText: 'Role', prefixIcon: Icon(Icons.admin_panel_settings_outlined)),
+                          items: ['admin', 'school_admin', 'teacher', 'parent']
+                              .map((r) => DropdownMenuItem(value: r, child: Text(r.toUpperCase())))
+                              .toList(),
+                          onChanged: (v) => setState(() => _role = v!),
+                        ),
                         SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
@@ -85,7 +94,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                           _emailController.text,
                                           _passwordController.text,
                                           _nameController.text,
-                                          'parent',
+                                          _role,
                                         ));
                                       }
                                     },

@@ -11,6 +11,8 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
       email: json['email'] as String,
       fullName: json['full_name'] as String?,
       role: json['role'] as String,
+      creditBalance: (json['credit_balance'] as num?)?.toDouble() ?? 0.0,
+      autoPayEnabled: json['auto_pay_enabled'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
@@ -18,6 +20,8 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
       'email': instance.email,
       'full_name': instance.fullName,
       'role': instance.role,
+      'credit_balance': instance.creditBalance,
+      'auto_pay_enabled': instance.autoPayEnabled,
     };
 
 AuthResponse _$AuthResponseFromJson(Map<String, dynamic> json) => AuthResponse(

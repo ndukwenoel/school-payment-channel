@@ -105,6 +105,27 @@ def handle_student_enrolled(payload: dict, school_id: int):
     finally:
         db.close()
 
+def _get_posting_rule(db, school_id: int, event_type: str, provider: str, default_debit: str, default_credit: str):
+    from ..models import PostingRule
+    
+    rule = db.query(PostingRule).filter(
+        PostingRule.school_id == school_id,
+        PostingRule.event_type == event_type,
+        PostingRule.provider == provider
+    ).first()
+    if rule:
+        return rule.debit_account_name, rule.credit_account_name
+    
+    rule = db.query(PostingRule).filter(
+        PostingRule.school_id == school_id,
+        PostingRule.event_type == event_type,
+        PostingRule.provider == None
+    ).first()
+    if rule:
+        return rule.debit_account_name, rule.credit_account_name
+        
+    return default_debit, default_credit
+
 def handle_payment_received(payload: dict, school_id: int):
     payment_id = payload.get("payment_id")
     amount = payload.get("amount")
@@ -131,66 +152,86 @@ def handle_payment_received(payload: dict, school_id: int):
             return
             
         # Match against a PaymentAttempt
-        payment_attempt = db.query(PaymentAttempt).filter(
+        payment_attempts = db.query(PaymentAttempt).filter(
             PaymentAttempt.transaction_id == transaction_id,
             PaymentAttempt.school_id == school_id
-        ).first()
+        ).all()
         
-        if payment_attempt:
-            payment_attempt.status = "success"
-            invoice = payment_attempt.invoice
-            
-            # Recalculate status
-            total_paid = sum(p.amount for p in invoice.payment_attempts if p.status == "success")
-            total_amount = sum(item.amount for item in invoice.line_items)
-            
-            if total_paid > total_amount:
-                invoice.status = "paid"
-                excess_amount = total_paid - total_amount
-                
-                invoice_portion = amount - excess_amount
-                
-                if invoice_portion > 0:
-                    record_event_transaction(
-                        db=db, school_id=school_id, description=description,
-                        event_type="payment.received", provider=provider, amount=invoice_portion,
-                        fallback_debit="Bank Account", fallback_credit="School Revenue"
-                    )
-                
-                # Overpayment logic
-                record_event_transaction(
-                    db=db, school_id=school_id, description=f"{description} (Overpayment Wallet Credit)",
-                    event_type="payment.overpayment", provider=provider, amount=excess_amount,
-                    fallback_debit="Bank Account", fallback_credit="Parent Wallet"
-                )
-                
-                # Flag for manual review in the Exception Queue (Unreconciled Funds)
-                record_event_transaction(
-                    db=db, school_id=school_id, description=f"Exception: Overpayment Review [REF:EXC-OVP-{transaction_id}]",
-                    event_type="payment.exception", provider=provider, amount=excess_amount,
-                    fallback_debit="Parent Wallet", fallback_credit="Unreconciled Funds"
-                )
-                print(f"[EVENT HANDLER] Overpayment of ${excess_amount} detected and flagged.")
-            else:
-                if total_paid == total_amount:
-                    invoice.status = "paid"
-                else:
-                    invoice.status = "partial"
+        if payment_attempts:
+            for payment_attempt in payment_attempts:
+                if payment_attempt.status == "success":
+                    continue # Already processed
                     
-                record_event_transaction(
-                    db=db,
-                    school_id=school_id,
-                    description=description,
-                    event_type="payment.received",
-                    provider=provider,
-                    amount=amount,
-                    fallback_debit="Bank Account",
-                    fallback_credit="School Revenue"
-                )
-            print(f"[EVENT HANDLER] Successfully matched transaction {transaction_id} to Invoice {invoice.id} and recorded ledger.")
+                payment_attempt.status = "success"
+                invoice = payment_attempt.invoice
+                
+                # Recalculate status
+                total_paid = sum(p.amount for p in invoice.payment_attempts if p.status == "success")
+                total_amount = sum(item.amount for item in invoice.line_items)
+                
+                # We use attempt.amount for the ledger entry instead of the total payload amount, 
+                # which handles both single payments and bundled payments correctly.
+                actual_amount = payment_attempt.amount
+                
+                if total_paid > total_amount:
+                    invoice.status = "paid"
+                    excess_amount = total_paid - total_amount
+                    
+                    invoice_portion = actual_amount - excess_amount
+                    
+                    if invoice_portion > 0:
+                        debit_acc, credit_acc = _get_posting_rule(db, school_id, "payment.received", provider, "Bank Account", "School Revenue")
+                        record_event_transaction(
+                            db=db, school_id=school_id, description=f"{description} (Inv: {invoice.id})",
+                            event_type="payment.received", provider=provider, amount=invoice_portion,
+                            fallback_debit=debit_acc, fallback_credit=credit_acc
+                        )
+                    
+                    # Overpayment logic
+                    debit_acc, credit_acc = _get_posting_rule(db, school_id, "payment.overpayment", provider, "Bank Account", "Parent Wallet")
+                    record_event_transaction(
+                        db=db, school_id=school_id, description=f"{description} (Overpayment Wallet Credit)",
+                        event_type="payment.overpayment", provider=provider, amount=excess_amount,
+                        fallback_debit=debit_acc, fallback_credit=credit_acc
+                    )
+                    
+                    # Flag for manual review in the Exception Queue (Unreconciled Funds)
+                    debit_acc, credit_acc = _get_posting_rule(db, school_id, "payment.exception", provider, "Parent Wallet", "Unreconciled Funds")
+                    record_event_transaction(
+                        db=db, school_id=school_id, description=f"Exception: Overpayment Review [REF:EXC-OVP-{transaction_id}-{invoice.id}]",
+                        event_type="payment.exception", provider=provider, amount=excess_amount,
+                        fallback_debit=debit_acc, fallback_credit=credit_acc
+                    )
+                    print(f"[EVENT HANDLER] Overpayment of ${excess_amount} detected and flagged.")
+                else:
+                    if total_paid == total_amount:
+                        invoice.status = "paid"
+                    else:
+                        invoice.status = "partial"
+                        
+                    debit_acc, credit_acc = _get_posting_rule(db, school_id, "payment.received", provider, "Bank Account", "School Revenue")
+                    record_event_transaction(
+                        db=db,
+                        school_id=school_id,
+                        description=f"{description} (Inv: {invoice.id})",
+                        event_type="payment.received",
+                        provider=provider,
+                        amount=actual_amount,
+                        fallback_debit=debit_acc,
+                        fallback_credit=credit_acc
+                    )
+                print(f"[EVENT HANDLER] Successfully matched transaction {transaction_id} to Invoice {invoice.id} and recorded ledger.")
+            
+            # If it was a bundle, mark bundle as paid
+            if transaction_id.startswith("BNDL-"):
+                from ..models import PaymentBundle
+                bundle = db.query(PaymentBundle).filter(PaymentBundle.reference == transaction_id).first()
+                if bundle:
+                    bundle.status = "paid"
         else:
             # Exception Handling: No matching payment attempt found
             print(f"[EVENT HANDLER] Exception: Unmatched {provider} transaction {transaction_id}. Routing to Unreconciled Funds.")
+            debit_acc, credit_acc = _get_posting_rule(db, school_id, "payment.exception", provider, "Bank Account", "Unreconciled Funds")
             record_event_transaction(
                 db=db,
                 school_id=school_id,
@@ -198,8 +239,8 @@ def handle_payment_received(payload: dict, school_id: int):
                 event_type="payment.exception",
                 provider=provider,
                 amount=amount,
-                fallback_debit="Bank Account",
-                fallback_credit="Unreconciled Funds"
+                fallback_debit=debit_acc,
+                fallback_credit=credit_acc
             )
             
         db.commit()
@@ -237,6 +278,7 @@ def handle_virtual_account_funded(payload: dict, school_id: int):
             return
             
         # 2. Write to Ledger
+        debit_acc, credit_acc = _get_posting_rule(db, school_id, "virtual_account.funded", "virtual_account", "Virtual Account Wallet", "School Revenue")
         record_event_transaction(
             db=db,
             school_id=school_id,
@@ -244,8 +286,8 @@ def handle_virtual_account_funded(payload: dict, school_id: int):
             event_type="virtual_account.funded",
             provider="virtual_account",
             amount=amount,
-            fallback_debit="Virtual Account Wallet",
-            fallback_credit="School Revenue"
+            fallback_debit=debit_acc,
+            fallback_credit=credit_acc
         )
         
         # 3. Auto-match to oldest pending Invoice
@@ -278,6 +320,7 @@ def handle_virtual_account_funded(payload: dict, school_id: int):
         else:
             # Exception Handling: No pending invoice found
             print(f"[EVENT HANDLER] Exception: No pending invoices found for Student {student_id}. Flagging for manual review.")
+            debit_acc, credit_acc = _get_posting_rule(db, school_id, "payment.exception", "virtual_account", "School Revenue", "Unreconciled Funds")
             record_event_transaction(
                 db=db,
                 school_id=school_id,
@@ -285,8 +328,8 @@ def handle_virtual_account_funded(payload: dict, school_id: int):
                 event_type="payment.exception",
                 provider="virtual_account",
                 amount=amount,
-                fallback_debit="School Revenue", # Reverse the revenue credit
-                fallback_credit="Unreconciled Funds"
+                fallback_debit=debit_acc,
+                fallback_credit=credit_acc
             )
                 
         db.commit()
@@ -435,5 +478,81 @@ def sweep_overdue_invoices():
         print(f"[CRON] Found {count} overdue invoices and dispatched events.")
     except Exception as e:
         print(f"[CRON] Error sweeping overdue invoices: {e}")
+    finally:
+        db.close()
+
+@celery_app.task(name="bulk_generate_invoices")
+def bulk_generate_invoices(invoice_data: dict, school_id: int):
+    """
+    Bulk generates invoices for all students in a given grade.
+    """
+    print(f"[EVENT HANDLER] Processing Bulk Invoice Generation for Grade: {invoice_data.get('grade')} in School: {school_id}")
+    from ..database import SessionLocal
+    from ..models import Invoice, InvoiceLineItem, Student, NotificationLog
+    from datetime import datetime
+    
+    db = SessionLocal()
+    try:
+        grade = invoice_data.get("grade")
+        title = invoice_data.get("title")
+        due_date_str = invoice_data.get("due_date")
+        discount_id = invoice_data.get("discount_id")
+        line_items_data = invoice_data.get("line_items", [])
+        
+        # Handle ISO format conversion safely
+        if due_date_str.endswith('Z'):
+            due_date_str = due_date_str[:-1] + '+00:00'
+        due_date = datetime.fromisoformat(due_date_str)
+        
+        students = db.query(Student).filter(
+            Student.grade == grade, 
+            Student.school_id == school_id
+        ).all()
+        
+        if not students:
+            print(f"[EVENT HANDLER] No students found in grade {grade}. Aborting bulk generation.")
+            return {"status": "completed", "count": 0}
+
+        count = 0
+        for student in students:
+            new_invoice = Invoice(
+                title=title,
+                due_date=due_date,
+                student_id=student.id,
+                discount_id=discount_id,
+                school_id=school_id,
+                status="pending"
+            )
+            db.add(new_invoice)
+            db.flush()
+            
+            for item in line_items_data:
+                line_item = InvoiceLineItem(
+                    invoice_id=new_invoice.id,
+                    title=item.get("title"),
+                    amount=item.get("amount")
+                )
+                db.add(line_item)
+            
+            # Log notification
+            if student.parent:
+                log = NotificationLog(
+                    recipient_email=student.parent.email,
+                    subject=f"New Invoice Assigned: {title}",
+                    message=f"A new invoice has been assigned to {student.full_name} due by {due_date.strftime('%Y-%m-%d')}.",
+                    status="sent",
+                    school_id=school_id
+                )
+                db.add(log)
+                
+            count += 1
+        
+        db.commit()
+        print(f"[EVENT HANDLER] Successfully generated {count} invoices for grade {grade}.")
+        return {"status": "completed", "count": count}
+    except Exception as e:
+        db.rollback()
+        print(f"[EVENT HANDLER] Error in bulk_generate_invoices: {e}")
+        raise
     finally:
         db.close()

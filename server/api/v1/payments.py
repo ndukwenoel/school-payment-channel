@@ -20,3 +20,15 @@ def confirm_payment(payment: schemas.PaymentAttemptCreate, db: Session = Depends
 @router.get("/history", response_model=list[schemas.PaymentAttempt])
 def get_payment_history(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     return CollectionService.get_payment_history(db=db, current_user=current_user)
+
+@router.post("/manual-transfer", response_model=schemas.PaymentAttempt)
+def submit_manual_payment(data: schemas.ManualPaymentCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    return CollectionService.submit_manual_payment(db=db, data=data, current_user=current_user)
+
+@router.post("/{payment_id}/verify", response_model=schemas.PaymentAttempt)
+def verify_manual_payment(payment_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    return CollectionService.verify_manual_payment(db=db, payment_id=payment_id, current_user=current_user)
+
+@router.post("/bundle", response_model=schemas.PaymentBundleResponse)
+def create_payment_bundle(bundle_data: schemas.PaymentBundleCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    return CollectionService.create_payment_bundle(db=db, invoice_ids=bundle_data.invoice_ids, current_user=current_user)

@@ -30,6 +30,7 @@ def read_students(
         s_dict = s.__dict__.copy()
         if s.classroom:
             s_dict["classroom_name"] = s.classroom.name
+        s_dict["virtual_accounts"] = s.virtual_accounts
         result.append(s_dict)
     return result
 
@@ -49,6 +50,7 @@ def get_student(
     s_dict = student.__dict__.copy()
     if student.classroom:
         s_dict["classroom_name"] = student.classroom.name
+    s_dict["virtual_accounts"] = student.virtual_accounts
     return s_dict
 
 @router.patch("/{student_id}", response_model=schemas.Student)
@@ -82,6 +84,7 @@ def update_student(
     s_dict = student.__dict__.copy()
     if student.classroom:
         s_dict["classroom_name"] = student.classroom.name
+    s_dict["virtual_accounts"] = student.virtual_accounts
     return s_dict
 
 @router.post("/admin", response_model=schemas.Student)
@@ -136,6 +139,7 @@ def create_admin_student(
     s_dict = db_student.__dict__.copy()
     if db_student.classroom:
         s_dict["classroom_name"] = db_student.classroom.name
+    s_dict["virtual_accounts"] = db_student.virtual_accounts
     return s_dict
 
 @router.post("/", response_model=schemas.Student)
@@ -173,7 +177,9 @@ def create_student(
     )
     EventDispatcher.publish(event)
     
-    return db_student
+    s_dict = db_student.__dict__.copy()
+    s_dict["virtual_accounts"] = db_student.virtual_accounts
+    return s_dict
 
 @router.post("/import")
 async def import_students(
@@ -316,4 +322,52 @@ def promote_students(
     db.commit()
     
     return {"message": f"Successfully promoted {promoted_count} students", "count": promoted_count}
+
+@router.post("/{student_id}/virtual-account", response_model=schemas.VirtualAccount)
+def generate_virtual_account(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin"]))
+):
+    if current_user.school_id is None:
+         raise HTTPException(status_code=400, detail="User does not belong to a school")
+         
+    student = db.query(models.Student).filter(
+        models.Student.id == student_id, 
+        models.Student.school_id == current_user.school_id
+    ).first()
+    
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    # Check if student already has an active virtual account
+    existing_va = db.query(models.VirtualAccount).filter(
+        models.VirtualAccount.student_id == student.id,
+        models.VirtualAccount.status == "active"
+    ).first()
+    
+    if existing_va:
+        return existing_va
+        
+    import random
+    import string
+    
+    # Mocking generation of a 10-digit account number
+    mock_account_number = "".join(random.choices(string.digits, k=10))
+    mock_bank_name = "Wema Bank" # Standard virtual account provider
+    mock_account_name = f"{student.full_name} - {student.enrollment_number}"
+    
+    va = models.VirtualAccount(
+        account_number=mock_account_number,
+        account_name=mock_account_name,
+        bank_name=mock_bank_name,
+        student_id=student.id,
+        school_id=current_user.school_id,
+        status="active"
+    )
+    db.add(va)
+    db.commit()
+    db.refresh(va)
+    
+    return va
 

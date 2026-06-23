@@ -128,9 +128,11 @@ class DashboardRepository {
 
   Future<void> createBulkFees(String title, double amount, DateTime dueDate, String grade) async {
     try {
-      await _apiClient.dio.post('/fees/bulk', data: {
+      await _apiClient.dio.post('/api/v1/invoices/bulk', data: {
         'title': title,
-        'amount': amount,
+        'line_items': [
+          {'title': title, 'amount': amount}
+        ],
         'due_date': dueDate.toIso8601String(),
         'grade': grade,
         'discount_id': null
@@ -152,6 +154,30 @@ class DashboardRepository {
          'outstanding_fees': 0.0
        };
     }
+  }
+
+  Future<List<dynamic>> getFeeTemplates() async {
+    final response = await _apiClient.dio.get('/invoices/templates');
+    return response.data;
+  }
+
+  Future<void> createFeeTemplate(String name, String description, List<Map<String, dynamic>> lineItems) async {
+    await _apiClient.dio.post('/invoices/templates', data: {
+      'name': name,
+      'description': description,
+      'line_items': lineItems,
+    });
+  }
+
+  Future<void> createInstallmentPlan(int invoiceId, List<Map<String, dynamic>> installments) async {
+    await _apiClient.dio.post('/invoices/$invoiceId/installments', data: {
+      'installments': installments,
+    });
+  }
+
+  Future<List<dynamic>> getStudentInvoices(int studentId) async {
+    final response = await _apiClient.dio.get('/invoices/student/$studentId');
+    return response.data;
   }
 
 }

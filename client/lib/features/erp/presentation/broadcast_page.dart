@@ -17,6 +17,7 @@ class _BroadcastPageState extends State<BroadcastPage> {
   final _titleController = TextEditingController();
   final _messageController = TextEditingController();
   String _type = "newsletter";
+  bool _sendWhatsapp = false;
   bool _loading = false;
 
   Future<void> _sendBroadcast() async {
@@ -25,20 +26,12 @@ class _BroadcastPageState extends State<BroadcastPage> {
 
     try {
       final repo = context.read<ErpRepository>();
-      // We don't have school_id handy here easily without fetching me, 
-      // but the backend uses current_user.school_id mostly. 
-      // Wait, schemas.BroadcastCreate REQUIRES school_id. 
-      // We should fetch 'me' first or store school_id in AuthState.
-      // For now, let's fetch 'me' or assume backend can infer if we change schema? No, strictly schema validation.
-      // Let's get school ID from DashboardRepository quick (cached ideally, but we fetch new).
-      
-      final school = await context.read<DashboardRepository>().getMySchool();
       
       await repo.createBroadcast({
         "title": _titleController.text,
         "message": _messageController.text,
         "type": _type,
-        "school_id": school.id
+        "send_whatsapp": _sendWhatsapp,
       });
       
       if (mounted) {
@@ -94,6 +87,15 @@ class _BroadcastPageState extends State<BroadcastPage> {
                 decoration: const InputDecoration(labelText: "Message Body"),
                 maxLines: 6,
                 validator: (v) => v!.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text("Also broadcast via WhatsApp", style: TextStyle(color: AppTheme.textDark)),
+                subtitle: const Text("Delivers message instantly to parents' WhatsApp numbers.", style: TextStyle(color: AppTheme.textMuted)),
+                value: _sendWhatsapp,
+                activeColor: AppTheme.limeLight,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (val) => setState(() => _sendWhatsapp = val),
               ),
               const Spacer(),
               SizedBox(

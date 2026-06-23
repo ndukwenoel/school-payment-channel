@@ -19,6 +19,8 @@ class User(UserBase):
     full_name: str
     role: str
     is_active: bool
+    credit_balance: float = 0.0
+    auto_pay_enabled: bool = False
 
     class Config:
         from_attributes = True
@@ -73,6 +75,7 @@ class Student(StudentBase):
     school_id: Optional[int] = None
     classroom_id: Optional[int] = None
     classroom_name: Optional[str] = None  # computed from relationship
+    virtual_accounts: List['VirtualAccount'] = []
 
     class Config:
         from_attributes = True
@@ -132,6 +135,7 @@ class InvoiceBulkCreate(BaseModel):
 class Invoice(InvoiceBase):
     id: int
     status: str
+    late_fee_applied: bool = False
     line_items: List[InvoiceLineItem] = []
 
     class Config:
@@ -186,7 +190,7 @@ class Installment(InstallmentBase):
 class InstallmentPlanBase(BaseModel):
     invoice_id: int
 
-class InstallmentPlanCreate(InstallmentPlanBase):
+class InstallmentPlanCreate(BaseModel):
     installments: List[InstallmentCreate]
 
 class InstallmentPlan(InstallmentPlanBase):
@@ -206,11 +210,63 @@ class PaymentAttemptBase(BaseModel):
 class PaymentAttemptCreate(PaymentAttemptBase):
     pass
 
+class ManualPaymentCreate(BaseModel):
+    invoice_id: int
+    amount: float
+    reference_number: str
+    receipt_url: Optional[str] = None
+
 class PaymentAttempt(PaymentAttemptBase):
     id: int
     status: str
     transaction_id: Optional[str] = None
+    receipt_url: Optional[str] = None
     payment_date: datetime
+
+    class Config:
+        from_attributes = True
+
+# --- Payment Bundle Schemas ---
+class PaymentBundleCreate(BaseModel):
+    invoice_ids: List[int]
+
+class PaymentBundleItemSchema(BaseModel):
+    invoice_id: int
+    amount_allocated: float
+
+class PaymentBundleResponse(BaseModel):
+    id: int
+    reference: str
+    total_amount: float
+    status: str
+    created_at: datetime
+    items: List[PaymentBundleItemSchema] = []
+
+    class Config:
+        from_attributes = True
+
+# --- Webhook Schemas ---
+class WebhookPayload(BaseModel):
+    reference: str # Can be a BNDL- ref, an Invoice ref, or a Virtual Account number
+    amount: float
+    provider: str
+    status: str # e.g. "success"
+    customer_email: Optional[str] = None
+    paid_at: Optional[datetime] = None
+
+# --- Payment Plan Request Schemas ---
+class PaymentPlanRequestCreate(BaseModel):
+    proposed_plan: str
+    reason: str
+
+class PaymentPlanRequestResponse(BaseModel):
+    id: int
+    invoice_id: int
+    parent_id: int
+    proposed_plan: str
+    reason: str
+    status: str
+    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -240,6 +296,10 @@ class SchoolBase(BaseModel):
     address: Optional[str] = None
     contact_email: Optional[str] = None
     logo_url: Optional[str] = None
+    allowed_installment_options: str = "2,3,4"
+    enable_late_fees: bool = False
+    late_fee_percentage: float = 0.0
+    late_fee_grace_period_days: int = 0
 
 class SchoolCreate(SchoolBase):
     pass
@@ -249,6 +309,9 @@ class SchoolUpdate(BaseModel):
     address: Optional[str] = None
     contact_email: Optional[str] = None
     logo_url: Optional[str] = None
+    enable_late_fees: Optional[bool] = None
+    late_fee_percentage: Optional[float] = None
+    late_fee_grace_period_days: Optional[int] = None
 
 class School(SchoolBase):
     id: int
@@ -401,7 +464,8 @@ class InventoryItemBase(BaseModel):
     category: str
     quantity: int = 0
     unit_price: Optional[float] = None
-    school_id: int
+    is_for_sale: bool = False
+    school_id: Optional[int] = None
 
 class InventoryItemCreate(InventoryItemBase):
     pass
@@ -417,7 +481,8 @@ class BroadcastBase(BaseModel):
     title: str
     message: str
     type: str = "newsletter"
-    school_id: int
+    school_id: Optional[int] = None
+    send_whatsapp: bool = False
 
 class BroadcastCreate(BroadcastBase):
     pass
@@ -434,7 +499,7 @@ class AcademicResourceBase(BaseModel):
     file_url: str
     type: str # note, exam, test
     visibility: str = "internal" # internal (default), public
-    school_id: int
+    school_id: Optional[int] = None
     classroom_id: Optional[int] = None
 
 class AcademicResourceCreate(AcademicResourceBase):
@@ -574,6 +639,49 @@ class PostingRule(PostingRuleBase):
     class Config:
         from_attributes = True
 
+class LedgerAccountBase(BaseModel):
+    name: str
+    type: str # asset, liability, equity, revenue, expense
+    school_id: Optional[int] = None
+
+class LedgerAccountCreate(LedgerAccountBase):
+    pass
+
+class LedgerAccount(LedgerAccountBase):
+    id: int
+    balance: float = 0.0 # Computed field
+    class Config:
+        from_attributes = True
+
+class LedgerEntryBase(BaseModel):
+    account_id: int
+    amount: float
+    type: str # debit, credit
+
+class LedgerEntryCreate(LedgerEntryBase):
+    pass
+
+class LedgerEntry(LedgerEntryBase):
+    id: int
+    transaction_id: int
+    account: Optional[LedgerAccount] = None
+    class Config:
+        from_attributes = True
+
+class LedgerTransactionBase(BaseModel):
+    description: str
+    school_id: Optional[int] = None
+
+class LedgerTransactionCreate(LedgerTransactionBase):
+    entries: List[LedgerEntryCreate]
+
+class LedgerTransaction(LedgerTransactionBase):
+    id: int
+    created_at: datetime
+    entries: List[LedgerEntry] = []
+    class Config:
+        from_attributes = True
+
 # --- Financial Intelligence Schemas ---
 
 class AgingBucket(BaseModel):
@@ -585,6 +693,11 @@ class AgingReportResponse(BaseModel):
     total_overdue: float
     buckets: List[AgingBucket]
 
+class ReminderRequest(BaseModel):
+    type: str = "all" # email, sms, whatsapp, all
+    target: str = "overdue_only" # overdue_only, all_parents
+    custom_message: Optional[str] = None
+
 class RevenueBreakdown(BaseModel):
     category: str
     amount: float
@@ -595,5 +708,24 @@ class RevenueReportResponse(BaseModel):
     
 class ExpectedSettlementResponse(BaseModel):
     total_expected: float
+    total_settled: float = 0.0
     providers: dict # e.g. {"paystack": 5000, "flutterwave": 1000}
+
+# --- Expense Schemas ---
+class ExpenseBase(BaseModel):
+    title: str
+    amount: float
+    category: str
+    payment_date: datetime
+
+class ExpenseCreate(ExpenseBase):
+    pass
+
+class Expense(ExpenseBase):
+    id: int
+    school_id: int
+    recorded_by_id: int
+
+    class Config:
+        from_attributes = True
 

@@ -81,6 +81,9 @@ def update_school(school_update: schemas.SchoolUpdate, current_user: models.User
     if school_update.address: db_school.address = school_update.address
     if school_update.contact_email: db_school.contact_email = school_update.contact_email
     if school_update.logo_url: db_school.logo_url = school_update.logo_url
+    if school_update.enable_late_fees is not None: db_school.enable_late_fees = school_update.enable_late_fees
+    if school_update.late_fee_percentage is not None: db_school.late_fee_percentage = school_update.late_fee_percentage
+    if school_update.late_fee_grace_period_days is not None: db_school.late_fee_grace_period_days = school_update.late_fee_grace_period_days
     
     db.commit()
     db.refresh(db_school)

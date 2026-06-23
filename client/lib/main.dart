@@ -15,6 +15,7 @@ import 'features/payments/presentation/invoices_list_page.dart';
 import 'features/payments/presentation/invoice_detail_page.dart';
 import 'features/payments/presentation/payment_method_page.dart';
 import 'features/payments/presentation/payment_success_page.dart';
+import 'features/payments/presentation/school_store_page.dart';
 import 'features/payments/data/payment_models.dart';
 import 'features/notifications/presentation/notification_history_page.dart';
 import 'features/notifications/data/notification_repository.dart';
@@ -31,6 +32,10 @@ import 'features/erp/presentation/test_results_entry_page.dart';
 import 'features/erp/presentation/student_registry_page.dart';
 import 'features/erp/presentation/staff_registry_page.dart';
 import 'features/dashboard/screens/finance_dashboard_screen.dart';
+import 'features/finance/presentation/general_ledger_page.dart';
+import 'features/finance/data/ledger_repository.dart';
+import 'features/erp/presentation/inventory_page.dart';
+import 'features/dashboard/screens/executive_dashboard_screen.dart';
 import 'features/dashboard/main_layout.dart';
 void main() {
   runApp(const MyApp());
@@ -54,6 +59,7 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (context) => paymentRepository),
         RepositoryProvider(create: (context) => notificationRepository),
         RepositoryProvider(create: (context) => ErpRepository(apiClient)),
+        RepositoryProvider(create: (context) => LedgerRepository(apiClient)),
       ],
       child: BlocProvider(
         create: (context) => AuthBloc(authRepository)..add(AuthCheckStatus()),
@@ -70,6 +76,15 @@ class AppView extends StatelessWidget {
   Widget build(BuildContext context) {
     final router = GoRouter(
       initialLocation: '/',
+      redirect: (context, state) {
+        final authState = context.read<AuthBloc>().state;
+        final bool isAuth = authState is AuthAuthenticated;
+        final bool isAuthRoute = state.matchedLocation == '/' || state.matchedLocation == '/register';
+
+        if (!isAuth && !isAuthRoute) return '/';
+        if (isAuth && isAuthRoute) return '/dashboard';
+        return null;
+      },
       routes: [
         GoRoute(
           path: '/',
@@ -99,6 +114,10 @@ class AppView extends StatelessWidget {
             GoRoute(
               path: '/invoices',
               builder: (context, state) => const InvoicesListPage(),
+            ),
+            GoRoute(
+              path: '/store',
+              builder: (context, state) => const SchoolStorePage(),
             ),
             GoRoute(
               path: '/invoice-detail',
@@ -176,21 +195,33 @@ class AppView extends StatelessWidget {
               path: '/erp/finance',
               builder: (context, state) => const FinanceDashboardScreen(),
             ),
+            GoRoute(
+              path: '/erp/ledger',
+              builder: (context, state) => const GeneralLedgerPage(),
+            ),
+            GoRoute(
+              path: '/erp/inventory',
+              builder: (context, state) => const InventoryPage(),
+            ),
+            GoRoute(
+              path: '/erp/executive',
+              builder: (context, state) => const ExecutiveDashboardScreen(),
+            ),
           ],
         ),
       ],
-      redirect: (context, state) {
-        // Redirection logic can be added here to protect /dashboard
-        // For now relying on Login page navigation
-        return null;
-      },
     );
 
-    return MaterialApp.router(
-      title: 'Channel',
-      theme: AppTheme.lightTheme,
-      routerConfig: router,
-      debugShowCheckedModeBanner: false,
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        router.refresh();
+      },
+      child: MaterialApp.router(
+        title: 'Channel',
+        theme: AppTheme.lightTheme,
+        routerConfig: router,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../data/erp_repository.dart';
 import 'student_profile_page.dart';
 
@@ -279,6 +280,74 @@ class _StudentRegistryPageState extends State<StudentRegistryPage> {
     );
   }
 
+  Future<void> _importCsv() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+    );
+    if (result == null || result.files.single.path == null) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      final response = await context.read<ErpRepository>().importStudents(result.files.single.path!);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Imported ${response['imported_count']} students.')));
+      _loadData();
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  void _showPromoteDialog() {
+    final grades = _students.map((e) => e['grade'].toString()).toSet().toList()..sort();
+    if (grades.isEmpty) return;
+    
+    String currentGrade = grades.first;
+    String newGrade = '';
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Promote Students'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<String>(
+              decoration: InputDecoration(labelText: 'Current Grade'),
+              value: currentGrade,
+              items: grades.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+              onChanged: (v) => currentGrade = v!,
+            ),
+            SizedBox(height: 16),
+            TextFormField(
+              decoration: InputDecoration(labelText: 'Promote To (New Grade)'),
+              onChanged: (v) => newGrade = v,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (newGrade.trim().isEmpty) return;
+              Navigator.pop(ctx);
+              setState(() => _isLoading = true);
+              try {
+                final response = await context.read<ErpRepository>().promoteStudents(currentGrade, newGrade.trim());
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Promoted ${response['count']} students.')));
+                _loadData();
+              } catch (e) {
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+              }
+            },
+            child: Text('Promote'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Get unique grades for filter
@@ -291,6 +360,25 @@ class _StudentRegistryPageState extends State<StudentRegistryPage> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
+        actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: Colors.black),
+            onSelected: (value) {
+              if (value == 'import') _importCsv();
+              if (value == 'promote') _showPromoteDialog();
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'import',
+                child: ListTile(leading: Icon(Icons.upload_file), title: Text('Import CSV'), contentPadding: EdgeInsets.zero),
+              ),
+              const PopupMenuItem<String>(
+                value: 'promote',
+                child: ListTile(leading: Icon(Icons.upgrade), title: Text('Promote Grade'), contentPadding: EdgeInsets.zero),
+              ),
+            ],
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddStudentDialog,

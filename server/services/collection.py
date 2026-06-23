@@ -117,6 +117,77 @@ class CollectionService:
         return attempts
 
     @staticmethod
+    def submit_manual_payment(db: Session, data: schemas.ManualPaymentCreate, current_user: models.User):
+        invoice = db.query(models.Invoice).filter(models.Invoice.id == data.invoice_id).first()
+        if not invoice:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        
+        # Check authorization
+        if invoice.student.parent_id != current_user.id and current_user.role not in ["admin", "school_admin"]:
+             raise HTTPException(status_code=403, detail="Not authorized to pay for this student")
+
+        attempt = models.PaymentAttempt(
+            invoice_id=data.invoice_id,
+            amount=data.amount,
+            provider="manual_transfer",
+            transaction_id=data.reference_number,
+            receipt_url=data.receipt_url,
+            status="pending_verification",
+            school_id=invoice.school_id
+        )
+        db.add(attempt)
+        db.commit()
+        db.refresh(attempt)
+        
+        return attempt
+
+    @staticmethod
+    def verify_manual_payment(db: Session, payment_id: int, current_user: models.User):
+        if current_user.role not in ["admin", "school_admin", "finance"]:
+             raise HTTPException(status_code=403, detail="Not authorized")
+             
+        attempt = db.query(models.PaymentAttempt).filter(models.PaymentAttempt.id == payment_id).first()
+        if not attempt or attempt.status != "pending_verification":
+             raise HTTPException(status_code=404, detail="Pending payment not found")
+             
+        invoice = attempt.invoice
+        attempt.status = "success"
+        
+        # Calculate totals to update invoice status
+        total_paid = sum(p.amount for p in invoice.payment_attempts if p.status == "success")
+        net_amount = sum(item.amount for item in invoice.line_items)
+        if invoice.discount:
+            if invoice.discount.percentage > 0:
+                net_amount -= (net_amount * (invoice.discount.percentage / 100))
+            if invoice.discount.flat_amount > 0:
+                net_amount -= invoice.discount.flat_amount
+                
+        if total_paid >= net_amount:
+            invoice.status = "paid"
+        elif total_paid > 0:
+            invoice.status = "partial"
+            
+        db.commit()
+        db.refresh(attempt)
+        
+        # Dispatch PaymentReceived event to trigger ledger and receipt
+        event = BaseEvent(
+            event_type="PaymentReceived",
+            school_id=invoice.school_id,
+            payload={
+                "payment_id": attempt.id,
+                "invoice_id": invoice.id,
+                "amount": attempt.amount,
+                "provider": attempt.provider,
+                "transaction_id": attempt.transaction_id,
+                "user_email": invoice.student.parent.email if hasattr(invoice.student, 'parent') else "parent@example.com"
+            }
+        )
+        EventDispatcher.publish(event)
+        
+        return attempt
+
+    @staticmethod
     def request_virtual_account(db: Session, student_id: int, current_user: models.User):
         student = db.query(models.Student).filter(models.Student.id == student_id).first()
         if not student:
@@ -167,3 +238,76 @@ class CollectionService:
         EventDispatcher.publish(event)
         
         return {"status": "success", "message": "Webhook processed via event queue"}
+
+    @staticmethod
+    def create_payment_bundle(db: Session, invoice_ids: list[int], current_user: models.User):
+        if not invoice_ids:
+            raise HTTPException(status_code=400, detail="No invoices provided")
+
+        invoices = db.query(models.Invoice).filter(models.Invoice.id.in_(invoice_ids)).all()
+        if len(invoices) != len(invoice_ids):
+            raise HTTPException(status_code=404, detail="Some invoices not found")
+
+        # Verify authorization
+        school_id = invoices[0].school_id
+        total_amount = 0.0
+
+        for inv in invoices:
+            if inv.student.parent_id != current_user.id and current_user.role not in ["admin", "school_admin"]:
+                raise HTTPException(status_code=403, detail="Not authorized to pay for these invoices")
+            if inv.status == "paid":
+                raise HTTPException(status_code=400, detail=f"Invoice {inv.id} is already paid")
+            
+            total_paid = sum(p.amount for p in inv.payment_attempts if p.status == "success")
+            net_amount = sum(item.amount for item in inv.line_items)
+            if inv.discount:
+                if inv.discount.percentage > 0:
+                    net_amount -= (net_amount * (inv.discount.percentage / 100))
+                if inv.discount.flat_amount > 0:
+                    net_amount -= inv.discount.flat_amount
+            
+            amount_due = net_amount - total_paid
+            total_amount += amount_due
+
+        reference = f"BNDL-{uuid.uuid4().hex[:8].upper()}"
+
+        bundle = models.PaymentBundle(
+            reference=reference,
+            total_amount=total_amount,
+            status="pending",
+            school_id=school_id
+        )
+        db.add(bundle)
+        db.flush()
+
+        for inv in invoices:
+            total_paid = sum(p.amount for p in inv.payment_attempts if p.status == "success")
+            net_amount = sum(item.amount for item in inv.line_items)
+            if inv.discount:
+                if inv.discount.percentage > 0:
+                    net_amount -= (net_amount * (inv.discount.percentage / 100))
+                if inv.discount.flat_amount > 0:
+                    net_amount -= inv.discount.flat_amount
+            amount_due = net_amount - total_paid
+
+            item = models.PaymentBundleItem(
+                bundle_id=bundle.id,
+                invoice_id=inv.id,
+                amount_allocated=amount_due
+            )
+            db.add(item)
+            
+            # Create pending payment attempt so handle_payment_received can match it via bundle reference mapping later
+            attempt = models.PaymentAttempt(
+                invoice_id=inv.id,
+                amount=amount_due,
+                provider="bundle",
+                transaction_id=reference, # Webhook sends this reference, which matches multiple PaymentAttempts
+                status="pending",
+                school_id=school_id
+            )
+            db.add(attempt)
+
+        db.commit()
+        db.refresh(bundle)
+        return bundle

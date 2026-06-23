@@ -162,13 +162,24 @@ def seed_rich_data():
         student = db.query(Student).filter(Student.enrollment_number == enroll_num).first()
         if not student:
             classroom = random.choice(classrooms)
+            dob = now - timedelta(days=random.randint(3650, 5475)) # 10-15 years old
             student = Student(
                 school_id=school.id,
                 parent_id=parent.id,
                 full_name=f"{first_names[i]} {last_names[i]}",
                 enrollment_number=enroll_num,
                 grade=classroom.name,
-                classroom_id=classroom.id
+                classroom_id=classroom.id,
+                date_of_birth=dob,
+                gender=random.choice(["Male", "Female"]),
+                home_address=f"{random.randint(1, 999)} {random.choice(['Main St', 'Oak Ave', 'Pine Ln', 'Maple Dr'])}, Cityville",
+                emergency_contact_name=f"Mr/Mrs {last_names[i]}",
+                emergency_contact_phone=f"+234 {random.randint(7000000000, 9099999999)}",
+                blood_group=random.choice(["O+", "A+", "B+", "AB+", "O-"]),
+                genotype=random.choice(["AA", "AS", "SS"]),
+                allergies=random.choice(["None", "Peanuts", "Dust", "None", "Pollen"]),
+                medical_conditions=random.choice(["None", "Asthma", "None", "None"]),
+                admission_date=now - timedelta(days=random.randint(100, 1000))
             )
             db.add(student)
             db.commit()

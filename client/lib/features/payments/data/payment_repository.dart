@@ -67,4 +67,89 @@ class PaymentRepository {
       throw e;
     }
   }
+
+  Future<PaymentAttempt> submitManualPayment(int invoiceId, double amount, String referenceNumber, {String? receiptUrl}) async {
+    try {
+      final response = await _apiClient.dio.post('/payments/manual-transfer', data: {
+        'invoice_id': invoiceId,
+        'amount': amount,
+        'reference_number': referenceNumber,
+        if (receiptUrl != null) 'receipt_url': receiptUrl,
+      });
+      return PaymentAttempt.fromJson(response.data);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Future<PaymentAttempt> verifyManualPayment(int paymentId) async {
+    try {
+      final response = await _apiClient.dio.post('/payments/$paymentId/verify');
+      return PaymentAttempt.fromJson(response.data);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  // Installment Plans
+  Future<void> createInstallmentPlan(int invoiceId, List<Map<String, dynamic>> installments) async {
+    await _apiClient.dio.post('/invoices/$invoiceId/installments', data: {
+      'installments': installments,
+    });
+  }
+
+  // Virtual Accounts
+  Future<Map<String, dynamic>> requestVirtualAccount(int studentId) async {
+    final response = await _apiClient.dio.post('/virtual-accounts/request/$studentId');
+    return response.data;
+  }
+
+  // Payment Bundles
+  Future<Map<String, dynamic>> createPaymentBundle(List<int> invoiceIds) async {
+    final response = await _apiClient.dio.post('/payments/bundle', data: {
+      'invoice_ids': invoiceIds,
+    });
+    return response.data;
+  }
+
+  // Payment Plan Requests
+  Future<Map<String, dynamic>> requestPaymentPlan(int invoiceId, List<Map<String, dynamic>> proposedInstallments, String reason) async {
+    final response = await _apiClient.dio.post('/invoices/$invoiceId/plan-requests', data: {
+      'proposed_installments': proposedInstallments,
+      'reason': reason,
+    });
+    return response.data;
+  }
+
+  Future<List<dynamic>> getPlanRequests() async {
+    final response = await _apiClient.dio.get('/invoices/plan-requests/all');
+    return response.data as List;
+  }
+
+  Future<void> approvePlanRequest(int requestId) async {
+    await _apiClient.dio.post('/invoices/plan-requests/$requestId/approve');
+  }
+
+  Future<void> rejectPlanRequest(int requestId) async {
+    await _apiClient.dio.post('/invoices/plan-requests/$requestId/reject');
+  }
+
+  // Credit Balance (Wallet) & Auto-Pay
+  Future<Map<String, dynamic>> topUpWallet(double amount, String reference) async {
+    final response = await _apiClient.dio.post('/parents/wallet/top-up', data: {
+      'amount': amount,
+      'reference': reference,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> toggleAutoPay() async {
+    final response = await _apiClient.dio.post('/parents/wallet/toggle-autopay');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> payWithBalance(int invoiceId) async {
+    final response = await _apiClient.dio.post('/invoices/$invoiceId/pay-with-balance');
+    return response.data;
+  }
 }

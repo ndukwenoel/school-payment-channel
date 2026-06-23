@@ -16,14 +16,28 @@ def create_broadcast(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(CheckRole(["admin", "school_admin"]))
 ):
-    if broadcast.school_id != current_user.school_id and current_user.role != "admin":
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to a school")
+
+    if broadcast.school_id and broadcast.school_id != current_user.school_id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized for this school")
 
-    new_broadcast = models.Broadcast(**broadcast.model_dump())
+    if not broadcast.school_id:
+        broadcast.school_id = current_user.school_id
+
+    # Exclude send_whatsapp from model dump since it's not in the DB model
+    b_dict = broadcast.model_dump(exclude={"send_whatsapp"})
+    new_broadcast = models.Broadcast(**b_dict)
     db.add(new_broadcast)
     
-    # Logic to send notifications to all parents would go here (similar to fees.py)
-    # For now, just creating the record.
+    # Logic to send notifications to all parents would go here
+    if broadcast.send_whatsapp:
+        # Mocking WhatsApp broadcast integration
+        print(f"--- MOCK WHATSAPP BROADCAST ---")
+        print(f"School ID: {broadcast.school_id}")
+        print(f"Title: {broadcast.title}")
+        print(f"Message: {broadcast.message}")
+        print(f"-------------------------------")
     
     db.commit()
     db.refresh(new_broadcast)
@@ -50,8 +64,14 @@ def upload_resource(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(CheckRole(["admin", "school_admin", "teacher"]))
 ):
-    if resource.school_id != current_user.school_id:
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to a school")
+
+    if resource.school_id and resource.school_id != current_user.school_id:
         raise HTTPException(status_code=403, detail="Not authorized for this school")
+
+    if not resource.school_id:
+        resource.school_id = current_user.school_id
 
     # Auto-approve if admin uploads, else pending
     status = "approved" if current_user.role in ["admin", "school_admin"] else "pending"

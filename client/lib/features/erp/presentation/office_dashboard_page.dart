@@ -62,6 +62,7 @@ class OfficeDashboardPage extends StatelessWidget {
       childAspectRatio: 1.5,
       children: [
         _buildModuleCard(context, "Fee Mgmt", Icons.monetization_on_outlined, AppTheme.blueVibrant),
+        _buildModuleCard(context, "Ledger", Icons.account_balance_outlined, Colors.purpleAccent),
         _buildModuleCard(context, "Payroll", Icons.payments_outlined, AppTheme.bluePale),
         _buildModuleCard(context, "Inventory", Icons.inventory_2_outlined, AppTheme.limeLight),
         _buildModuleCard(context, "Broadcasts", Icons.podcasts, Colors.orangeAccent),
@@ -74,7 +75,9 @@ class OfficeDashboardPage extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         if (title == "Fee Mgmt") context.push('/erp/fees');
+        if (title == "Ledger") context.push('/erp/ledger');
         if (title == "Payroll") context.push('/erp/payroll');
+        if (title == "Inventory") context.push('/erp/inventory');
         if (title == "Reports") context.push('/erp/results');
         if (title == "Broadcasts") context.push('/erp/broadcasts');
         if (title == "Approvals") context.push('/erp/review');

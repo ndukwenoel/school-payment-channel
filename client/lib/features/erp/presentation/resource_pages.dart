@@ -27,14 +27,11 @@ class _ResourceUploadPageState extends State<ResourceUploadPage> {
     setState(() => _loading = true);
 
     try {
-      final school = await context.read<DashboardRepository>().getMySchool();
-      
       await context.read<ErpRepository>().uploadResource({
         "title": _titleController.text,
         "file_url": _linkController.text,
         "type": _type,
         "visibility": _visibility,
-        "school_id": school.id
       });
       
       if (mounted) {

@@ -5,7 +5,7 @@ from . import models, database
 
 from .api.v1 import auth, invoices, schools, students, parents, payments, notifications, reports, webhooks
 from .api.v1 import erp_academic, erp_hr, erp_inventory, erp_collaboration
-from .api.v1 import virtual_accounts, finance, settlements
+from .api.v1 import virtual_accounts, finance, settlements, ledger
 
 # Create tables
 models.Base.metadata.create_all(bind=database.engine)
@@ -32,6 +32,7 @@ v1_router.include_router(erp_inventory.router)
 v1_router.include_router(erp_collaboration.router)
 v1_router.include_router(finance.router)
 v1_router.include_router(settlements.router)
+v1_router.include_router(ledger.router)
 
 app.include_router(v1_router)
 

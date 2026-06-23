@@ -22,6 +22,21 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
     setState(() => _isLoading = true);
     try {
       final repo = context.read<PaymentRepository>();
+      if (_selectedMethod == 'Virtual Account') {
+        final result = await repo.requestVirtualAccount(widget.invoice.studentId);
+        if (mounted) {
+          _showVirtualAccountDialog(result);
+        }
+        return;
+      }
+      
+      if (_selectedMethod == 'Offline Bank Transfer') {
+        if (mounted) {
+          _showOfflineTransferDialog();
+        }
+        return;
+      }
+
       final intent = await repo.createPaymentIntent(widget.invoice.id, widget.invoice.totalAmount);
       
       if (intent.authorizationUrl != null) {
@@ -73,6 +88,120 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
     );
   }
 
+  void _showVirtualAccountDialog(Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Wire Transfer Instructions"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Please transfer the total amount to the following dedicated account:"),
+            SizedBox(height: 16),
+            Text("Bank: ${data['bank_name']}", style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text("Account Name: ${data['account_name']}", style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text("Account Number: ${data['account_number']}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.blueVibrant)),
+            SizedBox(height: 16),
+            const Text("Your invoice will automatically be marked as paid once the transfer is received.", style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.pop(); // Go back to invoices list
+            },
+            child: const Text("Done"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showOfflineTransferDialog() {
+    final TextEditingController refController = TextEditingController();
+    bool submitting = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text("Offline Bank Transfer"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Please transfer the total amount to:"),
+                SizedBox(height: 8),
+                const Text("Bank: Opay", style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text("Account Name: School Payment Gateway", style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text("Account No: 1234567890", style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.blueVibrant)),
+                SizedBox(height: 16),
+                const Text("After transferring, enter the Session ID or Reference Number below to auto-reconcile."),
+                SizedBox(height: 8),
+                TextField(
+                  controller: refController,
+                  decoration: InputDecoration(
+                    labelText: "Reference / Session ID",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 8),
+                const Text("(Optional) Upload Receipt: [Mocked Button]"),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: submitting ? null : () {
+                  setState(() => _isLoading = false); // Reset loading state
+                  Navigator.pop(context);
+                },
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: submitting ? null : () async {
+                  if (refController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please enter a reference number")));
+                    return;
+                  }
+                  
+                  setDialogState(() => submitting = true);
+                  try {
+                    final repo = context.read<PaymentRepository>();
+                    await repo.submitManualPayment(
+                      widget.invoice.id, 
+                      widget.invoice.totalAmount, 
+                      refController.text,
+                      receiptUrl: 'https://mock-receipt-url.com/receipt.png'
+                    );
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment submitted for verification")));
+                      context.push('/payment-success', extra: widget.invoice);
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+                    }
+                  } finally {
+                    if (mounted) {
+                      setDialogState(() => submitting = false);
+                      setState(() => _isLoading = false);
+                    }
+                  }
+                },
+                child: submitting ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Submit Verification"),
+              ),
+            ],
+          );
+        }
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,7 +215,8 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
               SizedBox(height: 24),
               _buildSectionLabel("SUPPORTED METHODS"),
               _buildMethodOption("Paystack Checkout", "Card, Bank Transfer, USSD", Icons.credit_card, Colors.blueAccent),
-              _buildMethodOption("Offline Bank Transfer", "Manual Verification", Icons.account_balance, AppTheme.greenDeep),
+              _buildMethodOption("Virtual Account", "Dedicated Bank Account", Icons.account_balance, AppTheme.greenDeep),
+              _buildMethodOption("Offline Bank Transfer", "Manual Verification", Icons.receipt_long, AppTheme.greenDeep),
               SizedBox(height: 100),
             ],
           ),

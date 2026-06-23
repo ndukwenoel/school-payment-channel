@@ -178,3 +178,129 @@ def get_staff_payroll(
         raise HTTPException(status_code=404, detail="Staff member not found in your school")
 
     return db.query(models.Payroll).filter(models.Payroll.staff_id == staff_id).all()
+
+@router.get("/payroll/history")
+def get_payroll_history(
+    month: str,
+    year: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin"]))
+):
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to school")
+        
+    payrolls = db.query(models.Payroll).join(models.StaffProfile).filter(
+        models.Payroll.month == month,
+        models.Payroll.year == year,
+        models.Payroll.school_id == current_user.school_id
+    ).all()
+    
+    results = []
+    for p in payrolls:
+        p_dict = p.__dict__.copy()
+        if p.staff and p.staff.user:
+            p_dict["staff_name"] = p.staff.user.full_name
+            p_dict["designation"] = p.staff.designation
+        else:
+            p_dict["staff_name"] = "Unknown"
+            p_dict["designation"] = "Unknown"
+        results.append(p_dict)
+        
+    return results
+
+class PayrollUpdate(BaseModel):
+    bonuses: float
+    deductions: float
+
+@router.patch("/payroll/{payroll_id}")
+def update_payroll_record(
+    payroll_id: int,
+    data: PayrollUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin"]))
+):
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to school")
+        
+    payroll = db.query(models.Payroll).filter(
+        models.Payroll.id == payroll_id,
+        models.Payroll.school_id == current_user.school_id
+    ).first()
+    
+    if not payroll:
+        raise HTTPException(status_code=404, detail="Payroll record not found")
+        
+    payroll.bonuses = data.bonuses
+    payroll.deductions = data.deductions
+    payroll.net_pay = payroll.base_salary + data.bonuses - data.deductions
+    
+    db.commit()
+    db.refresh(payroll)
+    
+    return payroll
+
+@router.post("/payroll/execute")
+def execute_payroll(
+    month: str,
+    year: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin"]))
+):
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to school")
+        
+    # Check if this payroll has already been executed
+    expense_title = f"Payroll - {month} {year}"
+    existing_expense = db.query(models.Expense).filter(
+        models.Expense.school_id == current_user.school_id,
+        models.Expense.title == expense_title
+    ).first()
+    
+    if existing_expense:
+        raise HTTPException(status_code=400, detail="Payroll for this month has already been executed.")
+        
+    payrolls = db.query(models.Payroll).filter(
+        models.Payroll.month == month,
+        models.Payroll.year == year,
+        models.Payroll.school_id == current_user.school_id
+    ).all()
+    
+    if not payrolls:
+        raise HTTPException(status_code=400, detail="No payroll records found for this month.")
+        
+    total_net_pay = sum(p.net_pay for p in payrolls)
+    
+    if total_net_pay <= 0:
+        raise HTTPException(status_code=400, detail="Total payroll amount is zero or negative.")
+        
+    from datetime import datetime, timezone
+    
+    expense = models.Expense(
+        title=expense_title,
+        amount=total_net_pay,
+        category="Payroll",
+        payment_date=datetime.now(timezone.utc),
+        school_id=current_user.school_id,
+        recorded_by_id=current_user.id
+    )
+    db.add(expense)
+    
+    # Ledger Entry
+    from ...core.ledger import record_transaction
+    record_transaction(
+        db=db,
+        school_id=current_user.school_id,
+        description=f"Payroll Execution: {month} {year}",
+        debit_account_name="Payroll Expense",
+        credit_account_name="Bank Account",
+        amount=total_net_pay
+    )
+    
+    db.commit()
+    return {
+        "status": "success",
+        "message": f"Payroll executed. Total ₦{total_net_pay} logged as expense.",
+        "total_amount": total_net_pay,
+        "staff_count": len(payrolls)
+    }
+

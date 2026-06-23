@@ -24,6 +24,7 @@ class _MainLayoutState extends State<MainLayout> {
     if (location.startsWith('/erp/payroll')) return 7;
     if (location.startsWith('/erp/broadcasts')) return 8;
     if (location.startsWith('/erp/staff')) return 10;
+    if (location.startsWith('/erp/executive')) return 11;
     return 0; // Default fallback
   }
 
@@ -40,6 +41,7 @@ class _MainLayoutState extends State<MainLayout> {
       case 8: context.go('/erp/broadcasts'); break;
       case 9: context.go('/erp/students'); break;
       case 10: context.go('/erp/staff'); break;
+      case 11: context.go('/erp/executive'); break;
     }
   }
 
@@ -100,6 +102,7 @@ class _MainLayoutState extends State<MainLayout> {
                   const Text("CORE", style: TextStyle(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                   SizedBox(height: 12),
                   _NavItem(icon: Icons.dashboard_customize, label: "Overview", isSelected: selectedIndex == 0, onTap: () => _onItemTapped(0)),
+                  _NavItem(icon: Icons.pie_chart, label: "Executive Dashboard", isSelected: selectedIndex == 11, onTap: () => _onItemTapped(11)),
                   _NavItem(icon: Icons.account_balance, label: "Finance & Settlement", isSelected: selectedIndex == 1, onTap: () => _onItemTapped(1)),
                   _NavItem(icon: Icons.payments, label: "Fee Management", isSelected: selectedIndex == 2, onTap: () => _onItemTapped(2)),
                   _NavItem(icon: Icons.receipt_long, label: "Invoices", isSelected: selectedIndex == 3, onTap: () => _onItemTapped(3)),

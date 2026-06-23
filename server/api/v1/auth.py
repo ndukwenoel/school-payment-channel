@@ -84,3 +84,7 @@ class CheckRole:
                 detail=f"Role '{current_user.role}' is not authorized to access this resource"
             )
         return current_user
+
+@router.get("/me", response_model=schemas.User)
+def get_me(current_user: models.User = Depends(get_current_user)):
+    return current_user

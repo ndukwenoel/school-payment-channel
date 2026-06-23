@@ -9,8 +9,19 @@ class User {
   @JsonKey(name: 'full_name')
   final String? fullName;
   final String role;
+  @JsonKey(name: 'credit_balance')
+  final double creditBalance;
+  @JsonKey(name: 'auto_pay_enabled')
+  final bool autoPayEnabled;
 
-  User({required this.id, required this.email, this.fullName, required this.role});
+  User({
+    required this.id, 
+    required this.email, 
+    this.fullName, 
+    required this.role,
+    this.creditBalance = 0.0,
+    this.autoPayEnabled = false,
+  });
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
   Map<String, dynamic> toJson() => _$UserToJson(this);

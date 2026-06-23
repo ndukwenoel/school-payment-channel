@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../data/payment_repository.dart';
 import '../data/payment_models.dart';
 import '../../dashboard/data/dashboard_repository.dart'; // Student
+import '../../auth/data/auth_repository.dart';
+import '../../auth/data/auth_models.dart' as auth;
 import '../../../core/theme.dart';
 
 class InvoicesListPage extends StatefulWidget {
@@ -18,6 +20,7 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
   List<Student> _students = [];
   Map<int, List<Invoice>> _invoices = {};
   final Set<int> _processingInvoices = {};
+  auth.User? _currentUser;
 
   @override
   void initState() {
@@ -35,11 +38,15 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
         final invoices = await repo.getStudentInvoices(s.id);
         invoicesMap[s.id] = invoices;
       }
+      
+      final authRepo = context.read<AuthRepository>();
+      final user = await authRepo.getCurrentUser();
 
       if (mounted) {
         setState(() {
           _students = students;
           _invoices = invoicesMap;
+          _currentUser = user;
           _loading = false;
         });
       }
@@ -78,6 +85,8 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
               SizedBox(height: 16),
               _buildActionGrid(),
               SizedBox(height: 24),
+              if (_currentUser != null) _buildCreditBalanceCard(),
+              if (_currentUser != null) SizedBox(height: 24),
               const Text(
                 "PENDING INVOICES",
                 style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 0.5),
@@ -169,6 +178,18 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
     return Row(
       children: [
         Expanded(
+          child: GestureDetector(
+            onTap: () => context.push('/store'),
+            child: _buildActionCard(
+              title: "School\nStore",
+              color: AppTheme.sageGreen,
+              textColor: AppTheme.textDark,
+              iconColor: Colors.black.withOpacity(0.1),
+            ),
+          ),
+        ),
+        SizedBox(width: 8),
+        Expanded(
           child: _buildActionCard(
             title: "Download\nReceipts",
             color: AppTheme.blueVibrant,
@@ -221,6 +242,126 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
             child: Center(child: Container(width: 8, height: 8, decoration: BoxDecoration(color: textColor, shape: BoxShape.circle))),
           ),
           Text(title, style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w500, height: 1.2)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCreditBalanceCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceLight,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.account_balance_wallet, color: AppTheme.blueVibrant, size: 20),
+                  SizedBox(width: 8),
+                  const Text("CREDIT BALANCE", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 0.5)),
+                ],
+              ),
+              ElevatedButton(
+                onPressed: _showTopUpDialog,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.blueVibrant.withOpacity(0.1),
+                  foregroundColor: AppTheme.blueVibrant,
+                  elevation: 0,
+                  minimumSize: const Size(60, 30),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                child: const Text("TOP UP", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Text(
+            "₦${_currentUser!.creditBalance.toStringAsFixed(2)}",
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 16),
+          Divider(color: Colors.white.withOpacity(0.05)),
+          SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Auto-Pay Future Invoices", style: TextStyle(fontSize: 14)),
+              Switch(
+                value: _currentUser!.autoPayEnabled,
+                onChanged: (val) => _toggleAutoPay(),
+                activeColor: AppTheme.limeLight,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Future<void> _toggleAutoPay() async {
+    try {
+      final repo = context.read<PaymentRepository>();
+      final result = await repo.toggleAutoPay();
+      setState(() {
+         // Optimistically update
+         // Need a way to mutate User or just reload
+      });
+      await _loadData(); // Reload user
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'])));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
+
+  void _showTopUpDialog() {
+    final amountController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Top Up Balance"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Enter amount to add to your credit balance. In a real app, this would open Paystack/Flutterwave.", style: TextStyle(fontSize: 13, color: AppTheme.textMuted)),
+            SizedBox(height: 16),
+            TextField(
+              controller: amountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Amount (₦)",
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () async {
+              final amt = double.tryParse(amountController.text);
+              if (amt != null && amt > 0) {
+                Navigator.pop(ctx);
+                try {
+                  setState(() => _loading = true);
+                  final repo = context.read<PaymentRepository>();
+                  await repo.topUpWallet(amt, "TOPUP-${DateTime.now().millisecondsSinceEpoch}");
+                  await _loadData();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Top-up successful!")));
+                } catch (e) {
+                  setState(() => _loading = false);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+                }
+              }
+            },
+            child: const Text("Top Up"),
+          ),
         ],
       ),
     );
@@ -289,15 +430,13 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
   }
 
   Widget _buildPaymentDock() {
-    Invoice? firstInvoice;
+    List<int> unpaidInvoiceIds = [];
     for (var list in _invoices.values) {
       for (var f in list) {
         if (f.status != 'paid') {
-          firstInvoice = f;
-          break;
+          unpaidInvoiceIds.add(f.id);
         }
       }
-      if (firstInvoice != null) break;
     }
 
     return Container(
@@ -311,20 +450,80 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
         ),
       ),
       child: ElevatedButton(
-        onPressed: firstInvoice != null ? () => context.push('/invoice-detail', extra: firstInvoice) : null,
+        onPressed: unpaidInvoiceIds.isNotEmpty ? () => _handlePayTotal(unpaidInvoiceIds) : null,
+        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.limeLight, foregroundColor: Colors.black),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text("Pay Total"),
+            const Text("Pay Total (Consolidated)"),
             Row(
               children: [
-                Text("?${_totalOutstanding.toStringAsFixed(2)}"),
+                Text("₦${_totalOutstanding.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold)),
                 SizedBox(width: 8),
                 const Icon(Icons.arrow_forward_ios, size: 14),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _handlePayTotal(List<int> invoiceIds) async {
+    setState(() => _loading = true);
+    try {
+      final repo = context.read<PaymentRepository>();
+      final bundle = await repo.createPaymentBundle(invoiceIds);
+      
+      if (mounted) {
+        setState(() => _loading = false);
+        _showBundleTransferDialog(bundle['reference'], bundle['total_amount']);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error creating bundle: $e")));
+      }
+    }
+  }
+
+  void _showBundleTransferDialog(String reference, double amount) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Consolidated Payment Bundle"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("To clear all your outstanding invoices with a single payment, please transfer the exact total below:"),
+            SizedBox(height: 16),
+            Text("Total Amount: ₦${amount.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.limeLight)),
+            SizedBox(height: 16),
+            const Text("Bank: Opay", style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text("Account Name: School Payment Gateway", style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text("Account No: 1234567890", style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.blueVibrant)),
+            SizedBox(height: 16),
+            const Text("IMPORTANT: You must use the exact reference code below as your transfer description/narration. This ensures automatic splitting and reconciliation.", style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+            SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              color: Colors.black,
+              child: Text(reference, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, letterSpacing: 2)),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Optimistically reload to see pending attempts? 
+              // Wait, bundles create pending attempts immediately. We could refresh.
+              _loadData();
+            },
+            child: const Text("I have transferred"),
+          ),
+        ],
       ),
     );
   }

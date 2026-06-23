@@ -13,6 +13,8 @@ class User(Base):
     role = Column(String, default="parent") # parent, admin, school_admin
     is_active = Column(Boolean, default=True)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+    credit_balance = Column(Float, default=0.0) # Used for overpayments/advance payments
+    auto_pay_enabled = Column(Boolean, default=False)
 
     students = relationship("Student", back_populates="parent")
     school = relationship("School", back_populates="users")
@@ -25,6 +27,12 @@ class School(Base):
     address = Column(String)
     contact_email = Column(String)
     logo_url = Column(String, nullable=True)
+    allowed_installment_options = Column(String, default="2,3,4")
+    
+    # Late Fee Settings
+    enable_late_fees = Column(Boolean, default=False)
+    late_fee_percentage = Column(Float, default=0.0)
+    late_fee_grace_period_days = Column(Integer, default=0)
     
     users = relationship("User", back_populates="school")
     students = relationship("Student", back_populates="school")
@@ -97,6 +105,7 @@ class Invoice(Base):
     title = Column(String) # e.g. "Term 1 Invoice"
     due_date = Column(DateTime)
     status = Column(String, default="pending") # pending, paid, partial, overdue
+    late_fee_applied = Column(Boolean, default=False)
     student_id = Column(Integer, ForeignKey("students.id"))
     discount_id = Column(Integer, ForeignKey("discounts.id"), nullable=True)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
@@ -123,13 +132,49 @@ class PaymentAttempt(Base):
     id = Column(Integer, primary_key=True, index=True)
     invoice_id = Column(Integer, ForeignKey("invoices.id"))
     amount = Column(Float)
-    provider = Column(String) # paystack, flutterwave, mock
-    status = Column(String, default="pending") # pending, success, failed
-    transaction_id = Column(String, nullable=True)
+    provider = Column(String) # paystack, flutterwave, mock, manual_transfer
+    status = Column(String, default="pending") # pending, success, failed, pending_verification
+    transaction_id = Column(String, nullable=True) # Used for Opay/Bank reference number
+    receipt_url = Column(String, nullable=True) # Optional uploaded receipt image
     payment_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 
     invoice = relationship("Invoice", back_populates="payment_attempts")
+
+class PaymentBundle(Base):
+    __tablename__ = "payment_bundles"
+    id = Column(Integer, primary_key=True, index=True)
+    reference = Column(String, unique=True, index=True) # e.g. BNDL-1234
+    total_amount = Column(Float)
+    status = Column(String, default="pending") # pending, paid
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    
+    items = relationship("PaymentBundleItem", back_populates="bundle")
+
+class PaymentBundleItem(Base):
+    __tablename__ = "payment_bundle_items"
+    id = Column(Integer, primary_key=True, index=True)
+    bundle_id = Column(Integer, ForeignKey("payment_bundles.id"))
+    invoice_id = Column(Integer, ForeignKey("invoices.id"))
+    amount_allocated = Column(Float)
+    
+    bundle = relationship("PaymentBundle", back_populates="items")
+    invoice = relationship("Invoice")
+
+class PaymentPlanRequest(Base):
+    __tablename__ = "payment_plan_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    invoice_id = Column(Integer, ForeignKey("invoices.id"))
+    parent_id = Column(Integer, ForeignKey("users.id"))
+    proposed_plan = Column(String) # JSON string of proposed installments
+    reason = Column(String)
+    status = Column(String, default="pending") # pending, approved, rejected
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    
+    invoice = relationship("Invoice")
+    parent = relationship("User")
 
 class FeeTemplate(Base):
     __tablename__ = "fee_templates"
@@ -344,6 +389,7 @@ class InventoryItem(Base):
     category = Column(String) # e.g. "Stationery", "Lab"
     quantity = Column(Integer, default=0)
     unit_price = Column(Float, nullable=True)
+    is_for_sale = Column(Boolean, default=False)
     school_id = Column(Integer, ForeignKey("schools.id"))
 
     school = relationship("School", back_populates="inventory")
@@ -461,3 +507,17 @@ class PostingRule(Base):
     debit_account_name = Column(String)
     credit_account_name = Column(String)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+
+class Expense(Base):
+    __tablename__ = "expenses"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    amount = Column(Float)
+    category = Column(String) # e.g. "Utilities", "Vendor", "Payroll"
+    payment_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    recorded_by_id = Column(Integer, ForeignKey("users.id"))
+    
+    school = relationship("School")
+    recorded_by = relationship("User")

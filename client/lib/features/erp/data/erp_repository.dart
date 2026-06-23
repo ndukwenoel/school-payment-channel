@@ -1,6 +1,7 @@
 import '../../../core/api_client.dart';
 import '../../../core/offline_service.dart';
 import '../../../core/offline_exceptions.dart';
+import 'package:dio/dio.dart';
 
 class ErpRepository {
   final ApiClient apiClient;
@@ -104,31 +105,37 @@ class ErpRepository {
     await apiClient.dio.post('/erp/academic/students/$studentId/documents', data: data);
   }
 
-  // --- HR ---
+  // --- HR / Payroll ---
   Future<List<dynamic>> getStaff() async {
     final response = await apiClient.dio.get('/erp/hr/staff');
     return response.data;
   }
 
   Future<void> createStaff(Map<String, dynamic> data) async {
-    await apiClient.dio.post('/erp/hr/staff', data: data);
-  }
-
-  Future<void> createStaffAndUser(Map<String, dynamic> data) async {
     await apiClient.dio.post('/erp/hr/staff/admin', data: data);
   }
 
   Future<void> generatePayroll(String month, int year) async {
-    await apiClient.dio.post('/erp/hr/payroll/generate', queryParameters: {
-      'month': month,
-      'year': year
-    });
+    await apiClient.dio.post('/erp/hr/payroll/generate?month=$month&year=$year');
+  }
+
+  Future<List<dynamic>> getPayrollHistory(String month, int year) async {
+    final response = await apiClient.dio.get('/erp/hr/payroll/history?month=$month&year=$year');
+    return response.data;
+  }
+
+  Future<void> updatePayrollRecord(int payrollId, Map<String, dynamic> data) async {
+    await apiClient.dio.patch('/erp/hr/payroll/$payrollId', data: data);
   }
 
   // --- Inventory ---
   Future<List<dynamic>> getInventory() async {
     final response = await apiClient.dio.get('/erp/inventory/items');
     return response.data;
+  }
+
+  Future<void> createInventoryItem(Map<String, dynamic> data) async {
+    await apiClient.dio.post('/erp/inventory/items', data: data);
   }
 
   Future<void> updateStock(int itemId, int change) async {
@@ -173,5 +180,21 @@ class ErpRepository {
 
   Future<void> updateStudent(int id, Map<String, dynamic> data) async {
     await apiClient.dio.patch('/students/$id', data: data);
+  }
+
+  Future<Map<String, dynamic>> importStudents(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath),
+    });
+    final response = await apiClient.dio.post('/students/import', data: formData);
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> promoteStudents(String currentGrade, String newGrade) async {
+    final response = await apiClient.dio.post('/students/promote', data: {
+      'current_grade': currentGrade,
+      'new_grade': newGrade,
+    });
+    return response.data;
   }
 }

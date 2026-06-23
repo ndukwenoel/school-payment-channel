@@ -1,9 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../dashboard/data/dashboard_repository.dart';
 
-class StudentProfilePage extends StatelessWidget {
+class StudentProfilePage extends StatefulWidget {
   final dynamic student;
 
   const StudentProfilePage({Key? key, required this.student}) : super(key: key);
+
+  @override
+  State<StudentProfilePage> createState() => _StudentProfilePageState();
+}
+
+class _StudentProfilePageState extends State<StudentProfilePage> {
+  bool _loadingInvoices = true;
+  List<dynamic> _invoices = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInvoices();
+  }
+
+  Future<void> _loadInvoices() async {
+    try {
+      final repo = context.read<DashboardRepository>();
+      final results = await repo.getStudentInvoices(widget.student['id']);
+      if (mounted) {
+        setState(() {
+          _invoices = results;
+          _loadingInvoices = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingInvoices = false);
+      }
+    }
+  }
+
+  Future<void> _convertToInstallments(int invoiceId, double totalAmount) async {
+    try {
+      // Split into 4 monthly installments
+      final installments = List.generate(4, (i) => {
+        'amount_due': totalAmount / 4,
+        'due_date': DateTime.now().add(Duration(days: 30 * (i + 1))).toIso8601String()
+      });
+      
+      await context.read<DashboardRepository>().createInstallmentPlan(invoiceId, installments);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invoice successfully split into an Installment Plan! Parent will be notified.')));
+        _loadInvoices(); // Refresh invoices to show updated state
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
 
   Widget _buildSection(BuildContext context, String title, List<Widget> children) {
     return Card(
@@ -38,7 +91,10 @@ class StudentProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final student = widget.student;
+    
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Text('${student['full_name']} Profile'),
         backgroundColor: Colors.white,
@@ -85,6 +141,44 @@ class StudentProfilePage extends StatelessWidget {
               _buildInfoRow('Current Grade', student['grade']),
               _buildInfoRow('Classroom', student['classroom_name'] ?? 'Unassigned'),
               _buildInfoRow('Admission Date', student['admission_date']?.toString().split('T')[0] ?? 'N/A'),
+            ]),
+            
+            _buildSection(context, 'Finance & Billing', [
+              if (_loadingInvoices) const Center(child: CircularProgressIndicator())
+              else if (_invoices.isEmpty) const Text("No invoices found for this student.")
+              else ..._invoices.map((inv) {
+                final hasInstallments = inv['installment_plan'] != null;
+                final total = inv['total_amount'] ?? 0.0;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue[200]!)
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(inv['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text("₦${total.toStringAsFixed(2)} • ${inv['status'].toUpperCase()}", style: TextStyle(fontSize: 12, color: Colors.blue[800])),
+                        ],
+                      ),
+                      if (inv['status'] != 'paid' && !hasInstallments)
+                         ElevatedButton(
+                           onPressed: () => _convertToInstallments(inv['id'], total),
+                           style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[800]),
+                           child: const Text("Split Bill", style: TextStyle(fontSize: 12, color: Colors.white)),
+                         )
+                      else if (hasInstallments)
+                         const Chip(label: Text("Installments Active", style: TextStyle(fontSize: 10)))
+                    ],
+                  ),
+                );
+              }).toList()
             ]),
 
             _buildSection(context, 'Medical History', [

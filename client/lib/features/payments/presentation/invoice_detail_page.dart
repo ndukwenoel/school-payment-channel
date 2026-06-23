@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../data/payment_repository.dart';
 import '../data/payment_models.dart';
 import '../../../core/theme.dart';
+import '../../../core/api_client.dart';
 
 class InvoiceDetailPage extends StatefulWidget {
   final Invoice invoice;
@@ -12,7 +15,36 @@ class InvoiceDetailPage extends StatefulWidget {
 }
 
 class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
-  bool _payInFull = true;
+  int _selectedInstallmentCount = 1; // 1 = full payment
+  List<int> _allowedOptions = [];
+  bool _isLoadingOptions = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSchoolConfig();
+  }
+
+  Future<void> _fetchSchoolConfig() async {
+    try {
+      final api = ApiClient();
+      final res = await api.dio.get('/api/v1/schools/me');
+      final optionsStr = res.data['allowed_installment_options'] as String?;
+      if (optionsStr != null && optionsStr.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _allowedOptions = optionsStr.split(',').map((e) => int.tryParse(e.trim()) ?? 4).where((e) => e > 1).toList();
+            _allowedOptions.sort();
+            _isLoadingOptions = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() { _isLoadingOptions = false; });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _isLoadingOptions = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +65,6 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               _buildSectionLabel("PAYMENT DEADLINE"),
               _buildCalendarStrip(),
               SizedBox(height: 24),
-              _buildSectionLabel("PAYMENT OPTIONS"),
               _buildPaymentOptions(),
               SizedBox(height: 100),
             ],
@@ -78,7 +109,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           SizedBox(height: 4),
           Text(widget.invoice.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
-          Text("?${widget.invoice.totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w500)),
+          Text("₦${widget.invoice.totalAmount.toStringAsFixed(2)}", style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -110,7 +141,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(color: AppTheme.textMuted, fontSize: 14)),
-          Text("?${val.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+          Text("₦${val.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
         ],
       ),
     );
@@ -145,46 +176,114 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   }
 
   Widget _buildPaymentOptions() {
+    if (_isLoadingOptions) {
+      return Center(child: CircularProgressIndicator());
+    }
+    
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildOptionCard("Pay in Full", "One-time payment of ?${widget.invoice.totalAmount.toStringAsFixed(2)}", true),
-        SizedBox(height: 8),
-        _buildOptionCard("Installment Plan", "4 payments of ?${(widget.invoice.totalAmount / 4).toStringAsFixed(2)} / mo", false),
+        Center(
+          child: TextButton(
+            onPressed: _showCustomPlanDialog,
+            child: const Text("Need an installment plan? Request here", style: TextStyle(color: AppTheme.blueVibrant)),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildOptionCard(String title, String desc, bool value) {
-    bool selected = _payInFull == value;
-    return GestureDetector(
-      onTap: () => setState(() => _payInFull = value),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: selected ? AppTheme.blueVibrant.withOpacity(0.1) : AppTheme.surfaceLight,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: selected ? AppTheme.blueVibrant : Colors.transparent),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppTheme.blueVibrant, width: 2)),
-              child: selected ? Center(child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppTheme.blueVibrant, shape: BoxShape.circle))) : null,
-            ),
-            SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                Text(desc, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+  Future<void> _showCustomPlanDialog() async {
+    final reasonController = TextEditingController();
+    List<int> allowedOptions = _allowedOptions.isNotEmpty ? _allowedOptions : [2, 3, 4];
+    int numInstallments = allowedOptions.first;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text("Request Payment Plan"),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Select Number of Installments:"),
+                    SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8.0,
+                      children: allowedOptions.map((opt) {
+                        return ChoiceChip(
+                          label: Text("$opt"),
+                          selected: numInstallments == opt,
+                          onSelected: (selected) {
+                            if (selected) setState(() => numInstallments = opt);
+                          },
+                          selectedColor: AppTheme.blueVibrant,
+                          labelStyle: TextStyle(color: numInstallments == opt ? Colors.white : AppTheme.textDark),
+                        );
+                      }).toList(),
+                    ),
+                    SizedBox(height: 16),
+                    const Text("Reason for Request (Optional):"),
+                    SizedBox(height: 8),
+                    TextField(
+                      controller: reasonController,
+                      decoration: const InputDecoration(
+                        hintText: "e.g. Financial hardship, multiple children",
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
+                    ),
+                    SizedBox(height: 16),
+                    Text("Approx ₦${(widget.invoice.totalAmount / numInstallments).toStringAsFixed(2)} per installment", style: const TextStyle(color: AppTheme.limeLight)),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+                ElevatedButton(
+                  onPressed: () async {
+                    final reason = reasonController.text;
+                    Navigator.pop(context);
+                    await _submitPlanRequest(numInstallments, reason);
+                  },
+                  child: const Text("Submit Request"),
+                )
               ],
-            )
-          ],
-        ),
-      ),
+            );
+          }
+        );
+      }
     );
+  }
+
+  Future<void> _submitPlanRequest(int count, String reason) async {
+    try {
+      final repo = context.read<PaymentRepository>();
+      
+      double perInst = widget.invoice.totalAmount / count;
+      List<Map<String, dynamic>> proposed = [];
+      DateTime now = DateTime.now();
+      for (int i = 0; i < count; i++) {
+        proposed.add({
+          "amount": perInst,
+          "due_date": now.add(Duration(days: 30 * (i + 1))).toIso8601String(),
+        });
+      }
+
+      await repo.requestPaymentPlan(widget.invoice.id, proposed, reason);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment plan request sent for administrative review.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
+    }
   }
 
   Widget _buildPaymentDock() {
@@ -199,14 +298,16 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         ),
       ),
       child: ElevatedButton(
-        onPressed: () => context.push('/payment-method', extra: widget.invoice),
+        onPressed: () {
+          context.push('/payment-method', extra: widget.invoice);
+        },
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text("Confirm & Pay Now"),
+            const Text("Pay Now"),
             Row(
               children: [
-                Text("?${widget.invoice.totalAmount.toStringAsFixed(2)}"),
+                Text("₦${widget.invoice.totalAmount.toStringAsFixed(2)}"),
                 SizedBox(width: 8),
                 const Icon(Icons.arrow_forward_ios, size: 14),
               ],

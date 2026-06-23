@@ -30,4 +30,13 @@ class AuthRepository {
       throw e;
     }
   }
+
+  Future<User> getCurrentUser() async {
+    try {
+      final response = await _apiClient.dio.get('/auth/me');
+      return User.fromJson(response.data);
+    } catch (e) {
+      throw e;
+    }
+  }
 }

@@ -29,6 +29,7 @@ class AuthAuthenticated extends AuthState {
   final int userId;
   AuthAuthenticated(this.role, this.userId);
 }
+class AuthRegistered extends AuthState {}
 class AuthError extends AuthState {
   final String message;
   AuthError(this.message);
@@ -72,11 +73,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onRegister(AuthRegister event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      final user = await _repository.register(event.email, event.password, event.fullName, event.role);
-      // Auto login after register or ask to login? Method above returns User not AuthResponse.
-      // Usually we redirect to login.
-      emit(AuthError("Registration successful. Please login.")); 
-      // Using AuthError to show message is a hack for MVP, better to have AuthRegistered state or similar.
+      await _repository.register(event.email, event.password, event.fullName, event.role);
+      emit(AuthRegistered()); 
     } catch (e) {
       emit(AuthError("Registration failed: ${e.toString()}"));
     }

@@ -15,8 +15,14 @@ def create_inventory_item(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(CheckRole(["admin", "school_admin"]))
 ):
-    if item.school_id != current_user.school_id and current_user.role != "admin":
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to school")
+        
+    if item.school_id and item.school_id != current_user.school_id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized for this school")
+
+    if not item.school_id:
+        item.school_id = current_user.school_id
 
     new_item = models.InventoryItem(**item.model_dump())
     db.add(new_item)

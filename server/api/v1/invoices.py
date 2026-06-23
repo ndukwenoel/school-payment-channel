@@ -69,50 +69,13 @@ def create_bulk_invoices(
     if current_user.school_id is None:
          raise HTTPException(status_code=400, detail="User not assigned to a school")
 
-    # Find students in grade
-    students = db.query(models.Student).filter(
-        models.Student.grade == invoice_data.grade, 
-        models.Student.school_id == current_user.school_id
-    ).all()
+    from fastapi.encoders import jsonable_encoder
+    from ...worker.tasks import bulk_generate_invoices
     
-    if not students:
-        return {"message": "No students found in this grade", "count": 0}
+    payload = jsonable_encoder(invoice_data)
+    bulk_generate_invoices.delay(payload, current_user.school_id)
 
-    count = 0
-    for student in students:
-        new_invoice = models.Invoice(
-            title=invoice_data.title,
-            due_date=invoice_data.due_date,
-            student_id=student.id,
-            discount_id=invoice_data.discount_id,
-            school_id=current_user.school_id,
-            status="pending"
-        )
-        db.add(new_invoice)
-        db.flush()
-        
-        for item in invoice_data.line_items:
-            line_item = models.InvoiceLineItem(
-                invoice_id=new_invoice.id,
-                title=item.title,
-                amount=item.amount
-            )
-            db.add(line_item)
-        
-        # Log notification
-        if student.parent:
-            log = models.NotificationLog(
-                recipient_email=student.parent.email,
-                subject=f"New Invoice Assigned: {invoice_data.title}",
-                message=f"A new invoice has been assigned to {student.full_name} due by {invoice_data.due_date.strftime('%Y-%m-%d')}.",
-                status="sent"
-            )
-            db.add(log)
-            
-        count += 1
-    
-    db.commit()
-    return {"message": "Invoices pushed successfully to parents", "count": count}
+    return {"message": "Bulk invoice generation started in the background."}
 
 @router.get("/student/{student_id}", response_model=List[schemas.Invoice])
 def get_student_invoices(
@@ -231,3 +194,163 @@ def create_installment_plan(
     db.commit()
     db.refresh(plan)
     return plan
+
+@router.post("/{invoice_id}/plan-requests", response_model=schemas.PaymentPlanRequest)
+def request_payment_plan(
+    invoice_id: int,
+    request_data: schemas.PaymentPlanRequestCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    invoice = db.query(models.Invoice).filter(models.Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+        
+    if invoice.student.parent_id != current_user.id and current_user.role not in ["admin", "school_admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    if invoice.status == "paid":
+        raise HTTPException(status_code=400, detail="Invoice already paid")
+
+    plan_request = models.PaymentPlanRequest(
+        invoice_id=invoice.id,
+        proposed_installments=request_data.proposed_installments,
+        reason=request_data.reason,
+        status="pending",
+        school_id=invoice.school_id
+    )
+    db.add(plan_request)
+    db.commit()
+    db.refresh(plan_request)
+    return plan_request
+
+@router.get("/plan-requests/all", response_model=List[schemas.PaymentPlanRequest])
+def list_plan_requests(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin"]))
+):
+    if not current_user.school_id:
+        raise HTTPException(status_code=400, detail="User not assigned to a school")
+        
+    requests = db.query(models.PaymentPlanRequest).filter(
+        models.PaymentPlanRequest.school_id == current_user.school_id,
+        models.PaymentPlanRequest.status == "pending"
+    ).all()
+    return requests
+
+@router.post("/plan-requests/{request_id}/approve")
+def approve_plan_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin"]))
+):
+    plan_req = db.query(models.PaymentPlanRequest).filter(models.PaymentPlanRequest.id == request_id).first()
+    if not plan_req or plan_req.school_id != current_user.school_id:
+        raise HTTPException(status_code=404, detail="Request not found")
+        
+    if plan_req.status != "pending":
+        raise HTTPException(status_code=400, detail="Request is not pending")
+        
+    invoice = plan_req.invoice
+    
+    # Check if installment plan already exists
+    if invoice.installment_plan:
+        raise HTTPException(status_code=400, detail="Invoice already has an installment plan")
+
+    plan_req.status = "approved"
+    
+    # Create the installment plan
+    plan = models.InstallmentPlan(
+        invoice_id=invoice.id,
+        school_id=current_user.school_id
+    )
+    db.add(plan)
+    db.flush()
+    
+    for inst in plan_req.proposed_installments:
+        from datetime import datetime
+        db.add(models.Installment(
+            plan_id=plan.id,
+            amount_due=inst["amount"],
+            due_date=datetime.fromisoformat(inst["due_date"].replace("Z", "+00:00")),
+            status="pending"
+        ))
+        
+    db.commit()
+    return {"status": "success", "message": "Payment plan request approved and plan created"}
+
+@router.post("/plan-requests/{request_id}/reject")
+def reject_plan_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin"]))
+):
+    plan_req = db.query(models.PaymentPlanRequest).filter(models.PaymentPlanRequest.id == request_id).first()
+    if not plan_req or plan_req.school_id != current_user.school_id:
+        raise HTTPException(status_code=404, detail="Request not found")
+        
+    if plan_req.status != "pending":
+        raise HTTPException(status_code=400, detail="Request is not pending")
+        
+    plan_req.status = "rejected"
+    db.commit()
+    return {"status": "success", "message": "Payment plan request rejected"}
+
+@router.post("/{invoice_id}/pay-with-balance")
+def pay_invoice_with_balance(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    if current_user.role != "parent":
+        raise HTTPException(status_code=403, detail="Only parents can pay with balance")
+        
+    invoice = db.query(models.Invoice).filter(models.Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+        
+    if invoice.student.parent_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    if invoice.status == "paid":
+        raise HTTPException(status_code=400, detail="Invoice already paid")
+        
+    # Calculate amount due
+    total_amount = sum(item.amount for item in invoice.line_items)
+    
+    if current_user.credit_balance < total_amount:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Insufficient balance. Need {total_amount}, have {current_user.credit_balance}"
+        )
+        
+    # Deduct from balance
+    current_user.credit_balance -= total_amount
+    invoice.status = "paid"
+    
+    # Record payment attempt
+    attempt = models.PaymentAttempt(
+        invoice_id=invoice.id,
+        amount=total_amount,
+        provider="credit_balance",
+        status="success",
+        school_id=invoice.school_id
+    )
+    db.add(attempt)
+    
+    # Record Ledger Transaction (Debit Parent Wallet, Credit School Revenue)
+    from ...core.ledger import record_event_transaction
+    if invoice.school_id:
+        record_event_transaction(
+            db=db,
+            school_id=invoice.school_id,
+            description=f"Invoice {invoice.id} paid via Credit Balance",
+            event_type="payment.balance_used",
+            provider="credit_balance",
+            amount=total_amount,
+            fallback_debit="Parent Wallet",
+            fallback_credit="School Revenue"
+        )
+        
+    db.commit()
+    return {"status": "success", "message": "Invoice paid successfully", "new_balance": current_user.credit_balance}
