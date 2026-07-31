@@ -30,4 +30,14 @@ class LedgerRepository {
     final response = await _apiClient.dio.post('/ledger/rules', data: data);
     return response.data;
   }
+
+  Future<List<dynamic>> getExpenses() async {
+    final response = await _apiClient.dio.get('/ledger/expenses');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> recordExpense(Map<String, dynamic> data) async {
+    final response = await _apiClient.dio.post('/ledger/expenses', data: data);
+    return response.data;
+  }
 }

@@ -198,6 +198,7 @@ def get_payroll_history(
     results = []
     for p in payrolls:
         p_dict = p.__dict__.copy()
+        p_dict.pop("_sa_instance_state", None)
         if p.staff and p.staff.user:
             p_dict["staff_name"] = p.staff.user.full_name
             p_dict["designation"] = p.staff.designation

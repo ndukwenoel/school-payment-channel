@@ -90,12 +90,14 @@ class VirtualAccount(Base):
     account_number = Column(String, unique=True, index=True)
     account_name = Column(String)
     bank_name = Column(String)
-    student_id = Column(Integer, ForeignKey("students.id"))
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=True)
+    classroom_id = Column(Integer, ForeignKey("classrooms.id"), nullable=True)
     school_id = Column(Integer, ForeignKey("schools.id"))
     status = Column(String, default="active") # active, inactive
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     student = relationship("Student", back_populates="virtual_accounts")
+    classroom = relationship("ClassRoom", back_populates="virtual_accounts")
     school = relationship("School")
 
 class Invoice(Base):
@@ -251,6 +253,7 @@ class ClassRoom(Base):
 
     school = relationship("School", back_populates="classrooms")
     students = relationship("Student", back_populates="classroom")
+    virtual_accounts = relationship("VirtualAccount", back_populates="classroom")
 
 # Update Student to link to ClassRoom
 # Note: Keeping the original Student definition for now but adding a foreign key for ClassRoom later if needed.
@@ -521,3 +524,22 @@ class Expense(Base):
     
     school = relationship("School")
     recorded_by = relationship("User")
+
+class UnmatchedPayment(Base):
+    __tablename__ = "unmatched_payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    amount = Column(Float)
+    bank_name = Column(String)
+    account_number = Column(String)
+    transaction_ref = Column(String)
+    narration = Column(String)
+    status = Column(String, default="pending") # pending, resolved
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    classroom_id = Column(Integer, ForeignKey("classrooms.id"), nullable=True)
+    resolved_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    school = relationship("School")
+    classroom = relationship("ClassRoom")
+    resolved_by = relationship("User")

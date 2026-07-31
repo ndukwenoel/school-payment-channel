@@ -68,6 +68,15 @@ class PaymentRepository {
     }
   }
 
+  Future<List<PaymentAttempt>> getPendingManualPayments() async {
+    try {
+      final response = await _apiClient.dio.get('/payments/pending-manual');
+      return (response.data as List).map((e) => PaymentAttempt.fromJson(e)).toList();
+    } catch (e) {
+      throw e;
+    }
+  }
+
   Future<PaymentAttempt> submitManualPayment(int invoiceId, double amount, String referenceNumber, {String? receiptUrl}) async {
     try {
       final response = await _apiClient.dio.post('/payments/manual-transfer', data: {
@@ -151,5 +160,15 @@ class PaymentRepository {
   Future<Map<String, dynamic>> payWithBalance(int invoiceId) async {
     final response = await _apiClient.dio.post('/invoices/$invoiceId/pay-with-balance');
     return response.data;
+  }
+
+  // Unmatched Payments
+  Future<List<Map<String, dynamic>>> getUnmatchedPayments() async {
+    final response = await _apiClient.dio.get('/payments/unmatched');
+    return List<Map<String, dynamic>>.from(response.data);
+  }
+
+  Future<void> resolveUnmatchedPayment(int paymentId, int studentId) async {
+    await _apiClient.dio.post('/payments/unmatched/$paymentId/resolve', queryParameters: {'student_id': studentId});
   }
 }

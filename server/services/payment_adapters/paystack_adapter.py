@@ -45,6 +45,53 @@ class PaystackAdapter(PaymentAdapter):
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Paystack initialization failed: {str(e)}")
 
+    def create_virtual_account(self, customer_email: str, customer_name: str) -> Dict[str, Any]:
+        """
+        Creates a dedicated virtual account using Paystack's API.
+        This requires first creating/fetching a Customer, then creating the DVA.
+        """
+        if self.secret_key == "sk_test_mock_paystack_key":
+            import uuid
+            return {
+                "account_number": str(uuid.uuid4().int)[:10],
+                "account_name": customer_name,
+                "bank_name": "Paystack Titan"
+            }
+            
+        headers = {
+            "Authorization": f"Bearer {self.secret_key}",
+            "Content-Type": "application/json"
+        }
+        
+        try:
+            with httpx.Client() as client:
+                # 1. Ensure Customer Exists
+                customer_payload = {
+                    "email": customer_email,
+                    "first_name": customer_name.split()[0] if customer_name else "",
+                    "last_name": " ".join(customer_name.split()[1:]) if len(customer_name.split()) > 1 else ""
+                }
+                cust_res = client.post("https://api.paystack.co/customer", json=customer_payload, headers=headers)
+                cust_res.raise_for_status()
+                customer_code = cust_res.json()["data"]["customer_code"]
+                
+                # 2. Create Dedicated Account
+                dva_payload = {
+                    "customer": customer_code,
+                    "preferred_bank": "wema-bank"
+                }
+                dva_res = client.post("https://api.paystack.co/dedicated_account", json=dva_payload, headers=headers)
+                dva_res.raise_for_status()
+                dva_data = dva_res.json()["data"]
+                
+                return {
+                    "account_number": dva_data["account_number"],
+                    "account_name": dva_data["account_name"],
+                    "bank_name": dva_data["bank"]["name"]
+                }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Paystack DVA creation failed: {str(e)}")
+
     def verify_webhook_signature(self, payload: bytes, signature: str) -> bool:
         """
         Verify the Paystack signature using HMAC SHA512.

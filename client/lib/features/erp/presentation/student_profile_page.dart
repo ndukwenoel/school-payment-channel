@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../dashboard/data/dashboard_repository.dart';
 
 class StudentProfilePage extends StatefulWidget {
@@ -14,6 +15,7 @@ class StudentProfilePage extends StatefulWidget {
 class _StudentProfilePageState extends State<StudentProfilePage> {
   bool _loadingInvoices = true;
   List<dynamic> _invoices = [];
+  List<String> _uploadedDocuments = []; // Mock documents
 
   @override
   void initState() {
@@ -93,18 +95,42 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   Widget build(BuildContext context) {
     final student = widget.student;
     
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Text('${student['full_name']} Profile'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: AppBar(
+          title: Text('${student['full_name']} Profile'),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          bottom: const TabBar(
+            labelColor: Colors.blue,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Colors.blue,
+            tabs: [
+              Tab(text: "Overview"),
+              Tab(text: "Medical"),
+              Tab(text: "Documents"),
+            ],
+          ),
+        ),
+        body: TabBarView(
           children: [
+            _buildOverviewTab(student),
+            _buildMedicalTab(student),
+            _buildDocumentsTab(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverviewTab(dynamic student) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
             // Header
             Center(
               child: Column(
@@ -181,19 +207,72 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
               }).toList()
             ]),
 
-            _buildSection(context, 'Medical History', [
-              _buildInfoRow('Blood Group', student['blood_group'] ?? 'N/A'),
-              _buildInfoRow('Genotype', student['genotype'] ?? 'N/A'),
-              _buildInfoRow('Allergies', student['allergies'] ?? 'None'),
-              _buildInfoRow('Medical Conditions', student['medical_conditions'] ?? 'None'),
-            ]),
-
-            _buildSection(context, 'Emergency Contact', [
-              _buildInfoRow('Contact Name', student['emergency_contact_name'] ?? 'N/A'),
-              _buildInfoRow('Contact Phone', student['emergency_contact_phone'] ?? 'N/A'),
-            ]),
           ],
         ),
+      );
+  }
+
+  Widget _buildMedicalTab(dynamic student) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildSection(context, 'Medical History', [
+            _buildInfoRow('Blood Group', student['blood_group'] ?? 'N/A'),
+            _buildInfoRow('Genotype', student['genotype'] ?? 'N/A'),
+            _buildInfoRow('Allergies', student['allergies'] ?? 'None'),
+            _buildInfoRow('Medical Conditions', student['medical_conditions'] ?? 'None'),
+          ]),
+
+          _buildSection(context, 'Emergency Contact', [
+            _buildInfoRow('Contact Name', student['emergency_contact_name'] ?? 'N/A'),
+            _buildInfoRow('Contact Phone', student['emergency_contact_phone'] ?? 'N/A'),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocumentsTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ElevatedButton.icon(
+            onPressed: () async {
+              await Future.delayed(const Duration(milliseconds: 500));
+              setState(() {
+                _uploadedDocuments.add("mock_document_${DateTime.now().millisecondsSinceEpoch}.pdf");
+              });
+              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Document uploaded!")));
+            },
+            icon: const Icon(Icons.upload_file),
+            label: const Text("Upload New Document"),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _uploadedDocuments.isEmpty 
+              ? const Center(child: Text("No documents uploaded yet.", style: TextStyle(color: Colors.grey)))
+              : ListView.builder(
+                  itemCount: _uploadedDocuments.length,
+                  itemBuilder: (context, index) {
+                    return Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.description, color: Colors.blue),
+                        title: Text(_uploadedDocuments[index]),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () {
+                            setState(() => _uploadedDocuments.removeAt(index));
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+          )
+        ],
       ),
     );
   }

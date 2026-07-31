@@ -6,6 +6,18 @@ part of 'dashboard_repository.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+VirtualAccount _$VirtualAccountFromJson(Map<String, dynamic> json) => VirtualAccount(
+      accountName: json['account_name'] as String?,
+      accountNumber: json['account_number'] as String?,
+      bankName: json['bank_name'] as String?,
+    );
+
+Map<String, dynamic> _$VirtualAccountToJson(VirtualAccount instance) => <String, dynamic>{
+      'account_name': instance.accountName,
+      'account_number': instance.accountNumber,
+      'bank_name': instance.bankName,
+    };
+
 School _$SchoolFromJson(Map<String, dynamic> json) => School(
       id: (json['id'] as num).toInt(),
       name: json['name'] as String,
@@ -44,6 +56,9 @@ Student _$StudentFromJson(Map<String, dynamic> json) => Student(
           ? null
           : DateTime.parse(json['admission_date'] as String),
       status: json['status'] as String?,
+      virtualAccounts: (json['virtual_accounts'] as List<dynamic>?)
+          ?.map((e) => VirtualAccount.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$StudentToJson(Student instance) => <String, dynamic>{
@@ -64,4 +79,5 @@ Map<String, dynamic> _$StudentToJson(Student instance) => <String, dynamic>{
       'medical_conditions': instance.medicalConditions,
       'admission_date': instance.admissionDate?.toIso8601String(),
       'status': instance.status,
+      'virtual_accounts': instance.virtualAccounts?.map((e) => e.toJson()).toList(),
     };

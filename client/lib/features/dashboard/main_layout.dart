@@ -51,20 +51,14 @@ class _MainLayoutState extends State<MainLayout> {
     final selectedIndex = _getSelectedIndex(location);
 
     return Scaffold(
-      backgroundColor: AppTheme.textDark,
+      backgroundColor: AppTheme.background,
       body: Row(
         children: [
           _buildSidebar(selectedIndex),
           Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                bottomLeft: Radius.circular(20),
-              ),
-              child: Container(
-                color: AppTheme.peachBackground, 
-                child: widget.child,
-              ),
+            child: Container(
+              color: AppTheme.background, 
+              child: widget.child,
             ),
           ),
         ],
@@ -75,22 +69,22 @@ class _MainLayoutState extends State<MainLayout> {
   Widget _buildSidebar(int selectedIndex) {
     return Container(
       width: 260,
-      color: AppTheme.textDark,
+      color: AppTheme.white,
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.school, color: AppTheme.sageGreen, size: 36),
+              const Icon(Icons.school, color: AppTheme.primaryBlue, size: 36),
               SizedBox(width: 12),
-              Text("CHANNEL", style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold, letterSpacing: 2, color: AppTheme.sageGreen
+              Text("EduFlow", style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold, letterSpacing: 1, color: AppTheme.textDark
               )),
             ],
           ),
           SizedBox(height: 8),
-          const Text(" ERP SYSTEM", style: TextStyle(color: AppTheme.textMuted, fontSize: 10, letterSpacing: 3)),
+          const Text("ACADEMIC ERP", style: TextStyle(color: AppTheme.textMuted, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold)),
           
           SizedBox(height: 32),
           
@@ -127,23 +121,23 @@ class _MainLayoutState extends State<MainLayout> {
           ),
 
           SizedBox(height: 16),
-          Divider(color: AppTheme.sageGreenLight),
+          Divider(color: AppTheme.background),
           SizedBox(height: 16),
           // User profile snippet
           Row(
             children: [
               CircleAvatar(
-                backgroundColor: AppTheme.sageGreen.withOpacity(0.1),
+                backgroundColor: AppTheme.primaryBlueLight,
                 radius: 18,
-                child: const Text("AD", style: TextStyle(color: AppTheme.sageGreen, fontWeight: FontWeight.bold, fontSize: 12)),
+                child: const Text("AD", style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 12)),
               ),
               SizedBox(width: 12),
               const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Admin User", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textDark)),
-                    Text("System Admin", style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                    Text("Dr. Sarah Chen", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textDark)),
+                    Text("School Admin", style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
                   ],
                 ),
               ),
@@ -184,22 +178,21 @@ class _NavItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.sageGreen.withOpacity(0.15) : Colors.transparent,
+          color: isSelected ? AppTheme.primaryBlue : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: isSelected ? AppTheme.sageGreen.withOpacity(0.3) : Colors.transparent),
         ),
         child: Row(
           children: [
             Icon(
               icon,
               size: 20,
-              color: isSelected ? AppTheme.sageGreen : AppTheme.textMuted,
+              color: isSelected ? AppTheme.white : AppTheme.textMuted,
             ),
             SizedBox(width: 16),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? AppTheme.sageGreen : AppTheme.textMuted,
+                color: isSelected ? AppTheme.white : AppTheme.textMuted,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 fontSize: 14,
               ),

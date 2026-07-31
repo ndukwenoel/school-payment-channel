@@ -281,7 +281,7 @@ class _StudentRegistryPageState extends State<StudentRegistryPage> {
   }
 
   Future<void> _importCsv() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['csv'],
     );

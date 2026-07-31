@@ -18,11 +18,12 @@ class _GeneralLedgerPageState extends State<GeneralLedgerPage> with SingleTicker
   List<dynamic> _accounts = [];
   List<dynamic> _transactions = [];
   List<dynamic> _rules = [];
+  List<dynamic> _expenses = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadData();
   }
   
@@ -39,12 +40,14 @@ class _GeneralLedgerPageState extends State<GeneralLedgerPage> with SingleTicker
       final accounts = await repo.getAccounts();
       final transactions = await repo.getTransactions();
       final rules = await repo.getPostingRules();
+      final expenses = await repo.getExpenses();
       
       if (mounted) {
         setState(() {
           _accounts = accounts;
           _transactions = transactions;
           _rules = rules;
+          _expenses = expenses;
           _isLoading = false;
         });
       }
@@ -73,6 +76,7 @@ class _GeneralLedgerPageState extends State<GeneralLedgerPage> with SingleTicker
             Tab(text: 'Chart of Accounts'),
             Tab(text: 'Journal Entries'),
             Tab(text: 'Posting Rules'),
+            Tab(text: 'Expenses'),
           ],
         ),
       ),
@@ -84,6 +88,7 @@ class _GeneralLedgerPageState extends State<GeneralLedgerPage> with SingleTicker
                 _buildAccountsTab(),
                 _buildJournalTab(),
                 _buildRulesTab(),
+                _buildExpensesTab(),
               ],
             ),
     );
@@ -197,6 +202,33 @@ class _GeneralLedgerPageState extends State<GeneralLedgerPage> with SingleTicker
                   ],
                 ),
               ],
+            ),
+            isThreeLine: true,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildExpensesTab() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _expenses.length,
+      itemBuilder: (context, index) {
+        final exp = _expenses[index];
+        final date = DateTime.parse(exp['date']).toLocal();
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Colors.red.withOpacity(0.1),
+              child: const Icon(Icons.money_off, color: Colors.red),
+            ),
+            title: Text(exp['description'], style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('Category: ${exp['category']}\nDate: ${DateFormat('MMM dd, yyyy').format(date)}'),
+            trailing: Text(
+              '₦${(exp['amount'] as num).toStringAsFixed(2)}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red),
             ),
             isThreeLine: true,
           ),

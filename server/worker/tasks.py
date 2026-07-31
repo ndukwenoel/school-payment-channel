@@ -254,14 +254,14 @@ def handle_payment_received(payload: dict, school_id: int):
 def handle_virtual_account_funded(payload: dict, school_id: int):
     student_id = payload.get("student_id")
     account_number = payload.get("account_number")
-    amount = payload.get("amount")
+    amount = float(payload.get("amount", 0.0))
     transaction_ref = payload.get("transaction_ref")
     
     print(f"[EVENT HANDLER] Processing VirtualAccountFunded for Student {student_id} (${amount}). Triggering Ledger/Invoice Auto-matching...")
     
     from ..database import SessionLocal
     from ..core.ledger import record_event_transaction
-    from ..models import LedgerTransaction, Invoice, PaymentAttempt
+    from ..models import LedgerTransaction, Invoice, PaymentAttempt, Student
     from datetime import datetime, timezone
     
     db = SessionLocal()
@@ -277,7 +277,7 @@ def handle_virtual_account_funded(payload: dict, school_id: int):
             print(f"[EVENT HANDLER] Ledger entry already exists for VAM Txn {transaction_ref}. Skipping.")
             return
             
-        # 2. Write to Ledger
+        # 2. Write to Ledger (Main Entry)
         debit_acc, credit_acc = _get_posting_rule(db, school_id, "virtual_account.funded", "virtual_account", "Virtual Account Wallet", "School Revenue")
         record_event_transaction(
             db=db,
@@ -290,46 +290,62 @@ def handle_virtual_account_funded(payload: dict, school_id: int):
             fallback_credit=credit_acc
         )
         
-        # 3. Auto-match to oldest pending Invoice
-        pending_invoice = db.query(Invoice).filter(
+        # 3. Auto-match to invoices (oldest first)
+        pending_invoices = db.query(Invoice).filter(
             Invoice.student_id == student_id,
             Invoice.status.in_(["pending", "partial"])
-        ).order_by(Invoice.due_date.asc()).first()
+        ).order_by(Invoice.due_date.asc()).all()
         
-        if pending_invoice:
-            print(f"[EVENT HANDLER] Auto-matching ${amount} to Invoice ID {pending_invoice.id}")
+        remaining_amount = amount
+        for inv in pending_invoices:
+            if remaining_amount <= 0:
+                break
+                
+            total_paid = sum(p.amount for p in inv.payment_attempts if p.status == "success")
+            net_amount = sum(item.amount for item in inv.line_items)
+            if inv.discount:
+                if inv.discount.percentage > 0:
+                    net_amount -= (net_amount * (inv.discount.percentage / 100))
+                if inv.discount.flat_amount > 0:
+                    net_amount -= inv.discount.flat_amount
+                    
+            amount_due = net_amount - total_paid
+            if amount_due <= 0:
+                continue
+                
+            amount_to_apply = min(amount_due, remaining_amount)
+            
             new_payment = PaymentAttempt(
-                invoice_id=pending_invoice.id,
-                amount=amount,
+                invoice_id=inv.id,
+                amount=amount_to_apply,
                 provider="virtual_account",
-                transaction_id=f"VAM-{transaction_ref}",
+                transaction_id=f"VAM-{transaction_ref}-{inv.id}",
                 school_id=school_id,
                 status="success",
                 payment_date=datetime.now(timezone.utc)
             )
             db.add(new_payment)
             
-            # Recalculate status
-            total_paid = sum(p.amount for p in pending_invoice.payment_attempts if p.status == "success") + amount
-            total_amount = sum(item.amount for item in pending_invoice.line_items)
-            
-            if total_paid >= total_amount:
-                pending_invoice.status = "paid"
+            if amount_to_apply >= amount_due:
+                inv.status = "paid"
             else:
-                pending_invoice.status = "partial"
-        else:
-            # Exception Handling: No pending invoice found
-            print(f"[EVENT HANDLER] Exception: No pending invoices found for Student {student_id}. Flagging for manual review.")
-            debit_acc, credit_acc = _get_posting_rule(db, school_id, "payment.exception", "virtual_account", "School Revenue", "Unreconciled Funds")
+                inv.status = "partial"
+                
+            remaining_amount -= amount_to_apply
+            print(f"[EVENT HANDLER] Auto-matched ${amount_to_apply} to Invoice ID {inv.id}")
+
+        # 4. Handle excess funds
+        if remaining_amount > 0:
+            print(f"[EVENT HANDLER] ${remaining_amount} remains unapplied. Crediting parent wallet.")
+            student = db.query(Student).filter(Student.id == student_id).first()
+            if student and student.parent:
+                student.parent.credit_balance += remaining_amount
+                
+            debit_acc, credit_acc = _get_posting_rule(db, school_id, "payment.overpayment", "virtual_account", "School Revenue", "Parent Wallet")
             record_event_transaction(
-                db=db,
-                school_id=school_id,
-                description=f"Exception: Unmatched VA Funding for Student {student_id} [REF:EXC-{transaction_ref}]",
-                event_type="payment.exception",
-                provider="virtual_account",
-                amount=amount,
-                fallback_debit=debit_acc,
-                fallback_credit=credit_acc
+                db=db, school_id=school_id, description=f"{description} (Overpayment Credit)",
+                event_type="payment.overpayment", provider="virtual_account", amount=remaining_amount,
+                fallback_debit=debit_acc, fallback_credit=credit_acc
             )
                 
         db.commit()

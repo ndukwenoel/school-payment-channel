@@ -117,6 +117,17 @@ class CollectionService:
         return attempts
 
     @staticmethod
+    def get_pending_manual_payments(db: Session, current_user: models.User):
+        if current_user.role not in ["admin", "school_admin", "finance", "bursar"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+            
+        attempts = db.query(models.PaymentAttempt).filter(
+            models.PaymentAttempt.status == "pending_verification",
+            models.PaymentAttempt.school_id == current_user.school_id
+        ).order_by(models.PaymentAttempt.payment_date.desc()).all()
+        return attempts
+
+    @staticmethod
     def submit_manual_payment(db: Session, data: schemas.ManualPaymentCreate, current_user: models.User):
         invoice = db.query(models.Invoice).filter(models.Invoice.id == data.invoice_id).first()
         if not invoice:
@@ -188,7 +199,7 @@ class CollectionService:
         return attempt
 
     @staticmethod
-    def request_virtual_account(db: Session, student_id: int, current_user: models.User):
+    def request_virtual_account(db: Session, student_id: int, current_user: models.User, provider: str = "paystack"):
         student = db.query(models.Student).filter(models.Student.id == student_id).first()
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
@@ -200,12 +211,16 @@ class CollectionService:
         if existing:
             return existing
             
-        account_number = str(uuid.uuid4().int)[:10]
+        parent_email = student.parent.email if student.parent else "parent@example.com"
+        customer_name = f"{student.full_name} - {student.enrollment_number}"
+        
+        adapter = get_payment_adapter(provider)
+        dva_details = adapter.create_virtual_account(customer_email=parent_email, customer_name=customer_name)
         
         new_va = models.VirtualAccount(
-            account_number=account_number,
-            account_name=f"{student.full_name} - {student.enrollment_number}",
-            bank_name="Mock Bank Plc",
+            account_number=dva_details["account_number"],
+            account_name=dva_details["account_name"],
+            bank_name=dva_details["bank_name"],
             student_id=student_id,
             school_id=student.school_id
         )

@@ -74,26 +74,46 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: DefaultTabController(
+          length: 3,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(),
-              SizedBox(height: 16),
-              _buildHeroCard(),
-              SizedBox(height: 16),
-              _buildActionGrid(),
-              SizedBox(height: 24),
-              if (_currentUser != null) _buildCreditBalanceCard(),
-              if (_currentUser != null) SizedBox(height: 24),
-              const Text(
-                "PENDING INVOICES",
-                style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 0.5),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    SizedBox(height: 16),
+                    _buildHeroCard(),
+                    SizedBox(height: 16),
+                    _buildActionGrid(),
+                    SizedBox(height: 24),
+                    if (_currentUser != null) _buildCreditBalanceCard(),
+                    if (_currentUser != null) SizedBox(height: 24),
+                  ],
+                ),
               ),
-              SizedBox(height: 12),
-              ..._buildInvoicesList(),
-              SizedBox(height: 100), // Space for dock
+              const TabBar(
+                labelColor: AppTheme.limeLight,
+                unselectedLabelColor: AppTheme.textMuted,
+                indicatorColor: AppTheme.limeLight,
+                tabs: [
+                  Tab(text: "Pending"),
+                  Tab(text: "Partial"),
+                  Tab(text: "Paid"),
+                ],
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _buildTabContent('pending'),
+                    _buildTabContent('partial'),
+                    _buildTabContent('paid'),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -367,22 +387,26 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
     );
   }
 
-  List<Widget> _buildInvoicesList() {
+  Widget _buildTabContent(String filterStatus) {
     List<Widget> items = [];
     for (var list in _invoices.values) {
       for (var invoice in list) {
-        if (invoice.status == 'paid') continue;
+        if (filterStatus == 'pending' && invoice.status != 'pending') continue;
+        if (filterStatus == 'partial' && invoice.status != 'partial') continue;
+        if (filterStatus == 'paid' && invoice.status != 'paid') continue;
+        
         items.add(_buildInvoiceItem(invoice));
-        items.add(SizedBox(height: 8));
       }
     }
     if (items.isEmpty) {
-      items.add(Padding(
-        padding: EdgeInsets.symmetric(vertical: 40.0),
-        child: Center(child: Text("All caught up!", style: TextStyle(color: AppTheme.textMuted))),
-      ));
+      return Center(child: Text("No $filterStatus invoices found.", style: const TextStyle(color: AppTheme.textMuted)));
     }
-    return items;
+    return ListView.separated(
+      padding: const EdgeInsets.all(16).copyWith(bottom: 100),
+      itemCount: items.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemBuilder: (context, index) => items[index],
+    );
   }
 
   Widget _buildInvoiceItem(Invoice invoice) {

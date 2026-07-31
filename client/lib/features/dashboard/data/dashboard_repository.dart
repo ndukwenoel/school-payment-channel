@@ -21,6 +21,21 @@ class School {
 }
 
 @JsonSerializable()
+class VirtualAccount {
+  @JsonKey(name: 'account_name')
+  final String? accountName;
+  @JsonKey(name: 'account_number')
+  final String? accountNumber;
+  @JsonKey(name: 'bank_name')
+  final String? bankName;
+
+  VirtualAccount({this.accountName, this.accountNumber, this.bankName});
+
+  factory VirtualAccount.fromJson(Map<String, dynamic> json) => _$VirtualAccountFromJson(json);
+  Map<String, dynamic> toJson() => _$VirtualAccountToJson(this);
+}
+
+@JsonSerializable()
 class Student {
   final int id;
   @JsonKey(name: 'enrollment_number')
@@ -51,6 +66,8 @@ class Student {
   @JsonKey(name: 'admission_date')
   final DateTime? admissionDate;
   final String? status;
+  @JsonKey(name: 'virtual_accounts')
+  final List<VirtualAccount>? virtualAccounts;
 
   Student({
     required this.id, 
@@ -70,6 +87,7 @@ class Student {
     this.medicalConditions,
     this.admissionDate,
     this.status,
+    this.virtualAccounts,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) => _$StudentFromJson(json);
@@ -106,6 +124,15 @@ class DashboardRepository {
   Future<List<Student>> getStudents() async {
     try {
       final response = await _apiClient.dio.get('/students/');
+      return (response.data as List).map((e) => Student.fromJson(e)).toList();
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Future<List<Student>> getMyStudents() async {
+    try {
+      final response = await _apiClient.dio.get('/parents/my-students');
       return (response.data as List).map((e) => Student.fromJson(e)).toList();
     } catch (e) {
       throw e;

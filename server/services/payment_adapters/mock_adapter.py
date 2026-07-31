@@ -1,4 +1,5 @@
 from typing import Dict, Any
+import uuid
 from .base import PaymentAdapter
 
 class MockAdapter(PaymentAdapter):
@@ -7,6 +8,14 @@ class MockAdapter(PaymentAdapter):
             "provider": "mock",
             "authorization_url": f"http://localhost:8000/mock-checkout/{invoice_id}",
             "reference": f"MOCK-{invoice_id}-{int(amount)}"
+        }
+
+    def create_virtual_account(self, customer_email: str, customer_name: str) -> Dict[str, Any]:
+        account_number = str(uuid.uuid4().int)[:10]
+        return {
+            "account_number": account_number,
+            "account_name": customer_name,
+            "bank_name": "Mock Bank Plc"
         }
 
     def verify_webhook_signature(self, payload: bytes, signature: str) -> bool:

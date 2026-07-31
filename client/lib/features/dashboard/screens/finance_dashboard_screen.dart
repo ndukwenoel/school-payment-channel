@@ -108,7 +108,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
 
   Future<void> _uploadSettlement() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['csv'],
         withData: true,
@@ -186,7 +186,8 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       length: 9,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Finance Intelligence Platform', style: TextStyle(fontSize: 18)),
+          title: const Text('Financial Overview', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+          backgroundColor: AppTheme.background,
           bottom: const TabBar(
             isScrollable: true,
             tabs: [
@@ -242,53 +243,62 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     return RefreshIndicator(
       onRefresh: _fetchOverviewData,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         children: [
-          const Text("LEDGER REVENUE", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
-          SizedBox(height: 8),
-          _buildMetricCard("Total Collected Revenue", "₦${_totalRevenue.toStringAsFixed(2)}", AppTheme.limeLight),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlue,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(color: AppTheme.primaryBlue.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8)),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Pending Payments", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                      const SizedBox(height: 12),
+                      Text("₦${totalExpected.toStringAsFixed(2)}", style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 3,
+                child: Row(
+                  children: [
+                    Expanded(child: _buildMetricCard("Actual Settled", "₦${totalSettled.toStringAsFixed(2)}", AppTheme.success)),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildMetricCard("Total Collected", "₦${_totalRevenue.toStringAsFixed(2)}", AppTheme.primaryBlue)),
+                  ],
+                ),
+              ),
+            ],
+          ),
           
+          const SizedBox(height: 32),
           if (_revenueBreakdowns.isNotEmpty) ...[
-            SizedBox(height: 16),
-            const Text("Revenue by Category:", style: TextStyle(color: AppTheme.textMuted)),
-            SizedBox(height: 16),
+            const Text("Revenue by Category", style: TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 16),
             SizedBox(
               height: 250,
               child: PieChart(
                 PieChartData(
                   sectionsSpace: 2,
-                  centerSpaceRadius: 40,
+                  centerSpaceRadius: 60,
                   sections: _getRevenueSections(),
                 ),
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 24),
             _buildRevenueLegend(),
           ],
-          
-          SizedBox(height: 32),
-          const Text("SETTLEMENTS & PAYOUTS", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(child: _buildMetricCard("Pending Payouts", "₦${totalExpected.toStringAsFixed(2)}", Colors.orangeAccent)),
-              SizedBox(width: 16),
-              Expanded(child: _buildMetricCard("Actual Settled", "₦${totalSettled.toStringAsFixed(2)}", AppTheme.blueVibrant)),
-            ],
-          ),
-          
-          SizedBox(height: 16),
-          if (providers.isNotEmpty) ...[
-            const Text("Pending Breakdown by Provider:", style: TextStyle(color: AppTheme.textMuted)),
-            SizedBox(height: 8),
-            ...providers.entries.map((e) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.account_balance_wallet, color: AppTheme.textMuted),
-              title: Text(e.key.toString().toUpperCase()),
-              trailing: Text("₦${e.value.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            )).toList(),
-          ] else
-            const Text("No pending provider payouts.", style: TextStyle(color: AppTheme.textMuted50)),
         ],
       ),
     );
@@ -335,7 +345,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
             SizedBox(width: 8),
             Text(b['category'].toString(), style: const TextStyle(color: Colors.white)),
             Spacer(),
-            Text("₦${(b['amount'] as num).toDouble().toStringAsFixed(2)}", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            Text("₦${(b['amount'] as num).toDouble().toStringAsFixed(2)}", style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textDark)),
           ],
         );
       }).toList(),
@@ -346,16 +356,18 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withOpacity(0.3)),
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: const Color(0x147090B0), blurRadius: 15, offset: const Offset(0, 8)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: const TextStyle(color: AppTheme.textMuted, fontSize: 14)),
-          SizedBox(height: 8),
-          Text(amount, style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: accentColor)),
+          const SizedBox(height: 12),
+          Text(amount, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
         ],
       ),
     );

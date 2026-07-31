@@ -35,7 +35,17 @@ import 'features/dashboard/screens/finance_dashboard_screen.dart';
 import 'features/finance/presentation/general_ledger_page.dart';
 import 'features/finance/data/ledger_repository.dart';
 import 'features/erp/presentation/inventory_page.dart';
+import 'features/erp/presentation/child_academic_view.dart';
+import 'features/erp/presentation/school_profile_page.dart';
+import 'features/erp/presentation/rbac_page.dart';
+import 'features/erp/presentation/audit_logs_page.dart';
+import 'features/erp/presentation/classrooms_page.dart';
+import 'features/erp/presentation/subjects_page.dart';
+import 'features/erp/presentation/attendance_page.dart';
+import 'features/payments/presentation/installment_management_page.dart';
 import 'features/dashboard/screens/executive_dashboard_screen.dart';
+import 'features/dashboard/screens/parent_dashboard_screen.dart';
+import 'features/super_admin/presentation/super_admin_dashboard.dart';
 import 'features/dashboard/main_layout.dart';
 void main() {
   runApp(const MyApp());
@@ -82,7 +92,12 @@ class AppView extends StatelessWidget {
         final bool isAuthRoute = state.matchedLocation == '/' || state.matchedLocation == '/register';
 
         if (!isAuth && !isAuthRoute) return '/';
-        if (isAuth && isAuthRoute) return '/dashboard';
+        if (isAuth && isAuthRoute) {
+          final role = (authState as AuthAuthenticated).role;
+          if (role == 'super_admin') return '/super-admin';
+          if (role == 'parent') return '/parent-dashboard';
+          return '/dashboard';
+        }
         return null;
       },
       routes: [
@@ -93,6 +108,21 @@ class AppView extends StatelessWidget {
         GoRoute(
           path: '/register',
           builder: (context, state) => const RegisterPage(),
+        ),
+        GoRoute(
+          path: '/super-admin',
+          builder: (context, state) => const SuperAdminDashboard(),
+        ),
+        GoRoute(
+          path: '/parent-dashboard',
+          builder: (context, state) => const ParentDashboardScreen(),
+        ),
+        GoRoute(
+          path: '/parent/child-academics',
+          builder: (context, state) {
+             final student = state.extra;
+             return ChildAcademicView(student: student);
+          },
         ),
         ShellRoute(
           builder: (context, state, child) {
@@ -202,6 +232,34 @@ class AppView extends StatelessWidget {
             GoRoute(
               path: '/erp/inventory',
               builder: (context, state) => const InventoryPage(),
+            ),
+            GoRoute(
+              path: '/erp/settings',
+              builder: (context, state) => const SchoolProfilePage(),
+            ),
+            GoRoute(
+              path: '/erp/rbac',
+              builder: (context, state) => const RbacPage(),
+            ),
+            GoRoute(
+              path: '/erp/audit',
+              builder: (context, state) => const AuditLogsPage(),
+            ),
+            GoRoute(
+              path: '/erp/classrooms',
+              builder: (context, state) => const ClassroomsPage(),
+            ),
+            GoRoute(
+              path: '/erp/subjects',
+              builder: (context, state) => const SubjectsPage(),
+            ),
+            GoRoute(
+              path: '/erp/attendance',
+              builder: (context, state) => const AttendancePage(),
+            ),
+            GoRoute(
+              path: '/finance/installments',
+              builder: (context, state) => const InstallmentManagementPage(),
             ),
             GoRoute(
               path: '/erp/executive',

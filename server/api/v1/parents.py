@@ -41,7 +41,18 @@ def link_student(enrollment_number: str, db: Session = Depends(get_db), current_
 
 @router.get("/my-students", response_model=list[schemas.Student])
 def get_my_students(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    return db.query(models.Student).filter(models.Student.parent_id == current_user.id).all()
+    students = db.query(models.Student).filter(models.Student.parent_id == current_user.id).all()
+    # Prepare response, inject classroom virtual accounts if student specific one is missing
+    result = []
+    for s in students:
+        s_data = schemas.Student.from_orm(s).dict()
+        if not s_data.get("virtual_accounts") and s.classroom:
+            s_data["virtual_accounts"] = [
+                schemas.VirtualAccount.from_orm(va).dict() 
+                for va in s.classroom.virtual_accounts
+            ]
+        result.append(s_data)
+    return result
 
 from pydantic import BaseModel
 

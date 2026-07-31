@@ -292,6 +292,16 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   }
 
   Widget _buildConfirmDock() {
+    double fee = 0.0;
+    if (_selectedMethod == 'Paystack Checkout') {
+      // Simplified Paystack Fee calculation: 1.5% + 100 NGN (if > 2500) capped at 2000
+      double calc = widget.invoice.totalAmount * 0.015;
+      if (widget.invoice.totalAmount > 2500) calc += 100;
+      if (calc > 2000) calc = 2000;
+      fee = calc;
+    }
+    double finalTotal = widget.invoice.totalAmount + fee;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -305,6 +315,17 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (fee > 0)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Convenience Fee", style: TextStyle(color: AppTheme.textMuted, fontSize: 13)),
+                  Text("₦${fee.toStringAsFixed(2)}", style: const TextStyle(color: AppTheme.textMuted, fontSize: 13)),
+                ],
+              ),
+            ),
           const Text("🔒 SECURE 256-BIT SSL ENCRYPTION", style: TextStyle(color: AppTheme.textMuted50, fontSize: 10, letterSpacing: 1)),
           SizedBox(height: 12),
           ElevatedButton(
@@ -317,7 +338,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                 const Text("Continue to Pay"),
                 Row(
                   children: [
-                    Text("?${widget.invoice.totalAmount.toStringAsFixed(2)}"),
+                    Text("₦${finalTotal.toStringAsFixed(2)}"),
                     SizedBox(width: 8),
                     const Icon(Icons.arrow_forward_ios, size: 14),
                   ],
