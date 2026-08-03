@@ -46,7 +46,7 @@ class PaymentHistoryPage extends StatelessWidget {
                     child: const Icon(Icons.receipt_long, color: AppTheme.blueVibrant, size: 20),
                   ),
                   title: Text(
-                    "TXN-${p.transactionId.toUpperCase()}",
+                    "TXN-${p.transactionId?.toUpperCase() ?? 'UNKNOWN'}",
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1),
                   ),
                   subtitle: Text(
@@ -54,7 +54,7 @@ class PaymentHistoryPage extends StatelessWidget {
                     style: const TextStyle(color: AppTheme.textMuted50, fontSize: 12),
                   ),
                   trailing: Text(
-                    "₦${p.amountPaid.toStringAsFixed(2)}",
+                    "₦${p.amount.toStringAsFixed(2)}",
                     style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.limeLight, fontSize: 16),
                   ),
                 ),

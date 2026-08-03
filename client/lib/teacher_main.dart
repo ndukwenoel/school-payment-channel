@@ -43,7 +43,7 @@ class TeacherApp extends StatelessWidget {
         create: (context) => AuthBloc(authRepository)..add(AuthCheckStatus()),
         child: MaterialApp.router(
           title: 'Channel Teacher',
-          theme: AppTheme.darkTheme,
+          theme: AppTheme.lightTheme,
           routerConfig: _router,
         ),
       ),

@@ -119,7 +119,7 @@ def _get_posting_rule(db, school_id: int, event_type: str, provider: str, defaul
     rule = db.query(PostingRule).filter(
         PostingRule.school_id == school_id,
         PostingRule.event_type == event_type,
-        PostingRule.provider == None
+        PostingRule.provider.is_(None)
     ).first()
     if rule:
         return rule.debit_account_name, rule.credit_account_name
@@ -127,7 +127,6 @@ def _get_posting_rule(db, school_id: int, event_type: str, provider: str, defaul
     return default_debit, default_credit
 
 def handle_payment_received(payload: dict, school_id: int):
-    payment_id = payload.get("payment_id")
     amount = payload.get("amount")
     provider = payload.get("provider")
     transaction_id = payload.get("transaction_id")
@@ -136,7 +135,7 @@ def handle_payment_received(payload: dict, school_id: int):
     
     from ..database import SessionLocal
     from ..core.ledger import record_event_transaction
-    from ..models import LedgerTransaction, PaymentAttempt, Invoice
+    from ..models import LedgerTransaction, PaymentAttempt
     
     db = SessionLocal()
     try:
@@ -409,7 +408,6 @@ def handle_student_promoted(payload: dict, school_id: int):
 
 def handle_invoice_overdue(payload: dict, school_id: int):
     invoice_id = payload.get("invoice_id")
-    student_id = payload.get("student_id")
     
     print(f"[EVENT HANDLER] Processing InvoiceOverdue for invoice {invoice_id}. Sending reminder...")
     

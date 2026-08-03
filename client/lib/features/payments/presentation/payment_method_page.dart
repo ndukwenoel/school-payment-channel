@@ -177,17 +177,15 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                       refController.text,
                       receiptUrl: 'https://mock-receipt-url.com/receipt.png'
                     );
-                    if (mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment submitted for verification")));
-                      context.push('/payment-success', extra: widget.invoice);
-                    }
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment submitted for verification")));
+                    context.push('/payment-success', extra: widget.invoice);
                   } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
-                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
                   } finally {
-                    if (mounted) {
+                    if (mounted) { // outer widget mounted check is okay here since we don't use context, but for safety let's check both or just setState if mounted
                       setDialogState(() => submitting = false);
                       setState(() => _isLoading = false);
                     }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../data/payment_repository.dart';
+import '../../data/payment_repository.dart';
 import '../../../../core/theme.dart';
 
 class RecordTellerModal extends StatefulWidget {
