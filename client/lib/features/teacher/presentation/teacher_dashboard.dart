@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
 import '../../../core/offline_service.dart';
-import '../../erp/data/erp_repository.dart';
+import '../../erp/data/repositories/academic_repository.dart';
 import '../../auth/presentation/auth_bloc.dart';
 
 class TeacherDashboard extends StatefulWidget {
@@ -31,7 +31,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   void _syncNow() async {
     setState(() => _syncing = true);
     try {
-      await context.read<OfflineService>().syncPendingActions(context.read<ErpRepository>());
+      await context.read<OfflineService>().syncPendingActions(context.read<AcademicRepository>());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Sync complete!")));
         _refreshQueue();
@@ -46,7 +46,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
         title: const Text("TEACHER OFFLINE APP"),
         actions: [
@@ -147,3 +147,4 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     );
   }
 }
+

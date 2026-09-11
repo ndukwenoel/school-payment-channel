@@ -1,28 +1,28 @@
-import '../../../core/api_client.dart';
-import '../../../core/offline_service.dart';
-import '../../../core/offline_exceptions.dart';
 import 'package:dio/dio.dart';
+import '../../../../core/api_client.dart';
+import '../../../../core/offline_service.dart';
+import '../../../../core/offline_exceptions.dart';
+import '../models/erp_models.dart';
 
-class ErpRepository {
+class AcademicRepository {
   final ApiClient apiClient;
-  final OfflineService? offlineService; // Optional for offline mode
+  final OfflineService? offlineService;
 
-  ErpRepository(this.apiClient, {this.offlineService});
+  AcademicRepository(this.apiClient, {this.offlineService});
 
   // --- Academic ---
-  Future<List<dynamic>> getClassrooms() async {
-    // Read-only usually requires net, or we cache. MVP: Requires Net.
+  Future<List<Classroom>> getClassrooms() async {
     final response = await apiClient.dio.get('/erp/academic/classrooms');
-    return response.data;
+    return (response.data as List).map((e) => Classroom.fromJson(e)).toList();
   }
 
   Future<void> createClassroom(Map<String, dynamic> data) async {
     await apiClient.dio.post('/erp/academic/classrooms', data: data);
   }
 
-  Future<List<dynamic>> getSubjects() async {
+  Future<List<Subject>> getSubjects() async {
     final response = await apiClient.dio.get('/erp/academic/subjects');
-    return response.data;
+    return (response.data as List).map((e) => Subject.fromJson(e)).toList();
   }
 
   Future<void> markAttendance(Map<String, dynamic> data) async {
@@ -52,17 +52,17 @@ class ErpRepository {
   }
 
   // --- CourseTest ---
-  Future<List<dynamic>> getCourseTests({int? classroomId, int? subjectId}) async {
+  Future<List<CourseTest>> getCourseTests({int? classroomId, int? subjectId}) async {
     final params = <String, dynamic>{};
     if (classroomId != null) params['classroom_id'] = classroomId;
     if (subjectId != null) params['subject_id'] = subjectId;
     final response = await apiClient.dio.get('/erp/academic/tests', queryParameters: params);
-    return response.data;
+    return (response.data as List).map((e) => CourseTest.fromJson(e)).toList();
   }
 
-  Future<Map<String, dynamic>> getCourseTest(int testId) async {
+  Future<CourseTest> getCourseTest(int testId) async {
     final response = await apiClient.dio.get('/erp/academic/tests/$testId');
-    return response.data;
+    return CourseTest.fromJson(response.data);
   }
 
   Future<void> createCourseTest(Map<String, dynamic> data) async {
@@ -74,9 +74,9 @@ class ErpRepository {
   }
 
   // --- TestResult ---
-  Future<List<dynamic>> getTestResults(int testId) async {
+  Future<List<TestResult>> getTestResults(int testId) async {
     final response = await apiClient.dio.get('/erp/academic/tests/$testId/results');
-    return response.data;
+    return (response.data as List).map((e) => TestResult.fromJson(e)).toList();
   }
 
   Future<Map<String, dynamic>> recordBulkResults(
@@ -90,9 +90,9 @@ class ErpRepository {
     return response.data;
   }
 
-  Future<List<dynamic>> getStudentTestResults(int studentId) async {
+  Future<List<TestResult>> getStudentTestResults(int studentId) async {
     final response = await apiClient.dio.get('/erp/academic/students/$studentId/results');
-    return response.data;
+    return (response.data as List).map((e) => TestResult.fromJson(e)).toList();
   }
 
   // --- StudentDocument ---
@@ -105,73 +105,10 @@ class ErpRepository {
     await apiClient.dio.post('/erp/academic/students/$studentId/documents', data: data);
   }
 
-  // --- HR / Payroll ---
-  Future<List<dynamic>> getStaff() async {
-    final response = await apiClient.dio.get('/erp/hr/staff');
-    return response.data;
-  }
-
-  Future<void> createStaff(Map<String, dynamic> data) async {
-    await apiClient.dio.post('/erp/hr/staff/admin', data: data);
-  }
-
-  Future<void> generatePayroll(String month, int year) async {
-    await apiClient.dio.post('/erp/hr/payroll/generate?month=$month&year=$year');
-  }
-
-  Future<List<dynamic>> getPayrollHistory(String month, int year) async {
-    final response = await apiClient.dio.get('/erp/hr/payroll/history?month=$month&year=$year');
-    return response.data;
-  }
-
-  Future<void> updatePayrollRecord(int payrollId, Map<String, dynamic> data) async {
-    await apiClient.dio.patch('/erp/hr/payroll/$payrollId', data: data);
-  }
-
-  // --- Inventory ---
-  Future<List<dynamic>> getInventory() async {
-    final response = await apiClient.dio.get('/erp/inventory/items');
-    return response.data;
-  }
-
-  Future<void> createInventoryItem(Map<String, dynamic> data) async {
-    await apiClient.dio.post('/erp/inventory/items', data: data);
-  }
-
-  Future<void> updateStock(int itemId, int change) async {
-    await apiClient.dio.patch('/erp/inventory/items/$itemId/stock?quantity_change=$change');
-  }
-
-  // --- Collaboration ---
-  Future<void> createBroadcast(Map<String, dynamic> data) async {
-    await apiClient.dio.post('/erp/collaboration/broadcasts', data: data);
-  }
-
-  Future<void> uploadResource(Map<String, dynamic> data) async {
-    try {
-      await apiClient.dio.post('/erp/collaboration/resources', data: data);
-    } catch (e) {
-      if (offlineService != null) {
-        await offlineService!.queueAction('upload', data);
-        throw OfflineQueuedException("No Network. Resource saved offline.");
-      }
-      rethrow;
-    }
-  }
-
-  Future<List<dynamic>> getPendingResources() async {
-    final response = await apiClient.dio.get('/erp/collaboration/resources/pending');
-    return response.data;
-  }
-
-  Future<void> updateResourceStatus(int id, String status) async {
-    await apiClient.dio.put('/erp/collaboration/resources/$id/status?status=$status');
-  }
-
   // --- Student Registry ---
-  Future<List<dynamic>> getStudents() async {
+  Future<List<Student>> getStudents() async {
     final response = await apiClient.dio.get('/students/');
-    return response.data;
+    return (response.data as List).map((e) => Student.fromJson(e)).toList();
   }
 
   Future<void> createStudent(Map<String, dynamic> data) async {

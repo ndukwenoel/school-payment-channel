@@ -8,7 +8,8 @@ abstract class AuthEvent {}
 class AuthLogin extends AuthEvent {
   final String email;
   final String password;
-  AuthLogin(this.email, this.password);
+  final bool rememberMe;
+  AuthLogin(this.email, this.password, {this.rememberMe = false});
 }
 class AuthRegister extends AuthEvent {
   final String email;
@@ -49,10 +50,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onCheckStatus(AuthCheckStatus event, Emitter<AuthState> emit) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('access_token');
+    final rememberMe = prefs.getBool('remember_me') ?? false;
+    
     if (token != null) {
-      final role = prefs.getString('role') ?? 'parent';
-      final userId = prefs.getInt('user_id') ?? 0;
-      emit(AuthAuthenticated(role, userId));
+      if (rememberMe) {
+        final role = prefs.getString('role') ?? 'parent';
+        final userId = prefs.getInt('user_id') ?? 0;
+        emit(AuthAuthenticated(role, userId));
+      } else {
+        await prefs.clear();
+        emit(AuthInitial());
+      }
+    } else {
+      emit(AuthInitial());
     }
   }
 
@@ -64,6 +74,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await prefs.setString('access_token', response.accessToken);
       await prefs.setInt('user_id', response.userId);
       await prefs.setString('role', response.role);
+      await prefs.setBool('remember_me', event.rememberMe);
       emit(AuthAuthenticated(response.role, response.userId));
     } catch (e) {
       emit(AuthError("Login failed: ${e.toString()}"));

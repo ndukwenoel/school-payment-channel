@@ -3,14 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from . import models, database
 
-from .api.v1 import auth, invoices, schools, students, parents, payments, notifications, reports, webhooks
+from .api.v1 import auth, invoices, schools, students, parents, payments, notifications, reports, webhooks, users, platform_billing, settings, audit_logs
 from .api.v1 import erp_academic, erp_hr, erp_inventory, erp_collaboration
 from .api.v1 import virtual_accounts, finance, settlements, ledger
 
 # Create tables
 models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="Channel")
+app = FastAPI(title="Channel Education Systems")
 
 # API V1 Router setup
 from fastapi import APIRouter
@@ -19,18 +19,22 @@ v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(auth.router)
 v1_router.include_router(schools.router)
 v1_router.include_router(students.router)
-v1_router.include_router(invoices.router)
 v1_router.include_router(parents.router)
+v1_router.include_router(invoices.router)
 v1_router.include_router(payments.router)
-v1_router.include_router(webhooks.router)
-v1_router.include_router(virtual_accounts.router)
 v1_router.include_router(notifications.router)
+v1_router.include_router(webhooks.router)
 v1_router.include_router(reports.router)
+v1_router.include_router(users.router)
+v1_router.include_router(platform_billing.router)
+v1_router.include_router(settings.router)
+v1_router.include_router(audit_logs.router)
 v1_router.include_router(erp_academic.router)
 v1_router.include_router(erp_hr.router)
 v1_router.include_router(erp_inventory.router)
 v1_router.include_router(erp_collaboration.router)
 v1_router.include_router(finance.router)
+v1_router.include_router(virtual_accounts.router)
 v1_router.include_router(settlements.router)
 v1_router.include_router(ledger.router)
 
@@ -54,7 +58,7 @@ app.add_middleware(
 # API Routes Placeholder
 @app.get("/api/health")
 def read_root():
-    return {"status": "ok", "message": "Channel API is running"}
+    return {"status": "ok", "message": "Channel Education Systems API is running"}
 
 from .events import BaseEvent, EventDispatcher
 

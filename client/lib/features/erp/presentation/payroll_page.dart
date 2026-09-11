@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../data/erp_repository.dart';
+import '../data/repositories/academic_repository.dart';
+import '../data/repositories/hr_repository.dart';
+import '../data/repositories/inventory_repository.dart';
+import '../data/repositories/collaboration_repository.dart';
 import '../../../core/theme.dart';
 
 class PayrollPage extends StatefulWidget {
@@ -25,7 +28,7 @@ class _PayrollPageState extends State<PayrollPage> {
   void _loadPayrollHistory() async {
     setState(() => _loading = true);
     try {
-      final records = await context.read<ErpRepository>().getPayrollHistory(_month, _year);
+      final records = await context.read<HrRepository>().getPayrollHistory(_month, _year);
       if (mounted) {
         setState(() {
           _payrolls = records;
@@ -43,7 +46,7 @@ class _PayrollPageState extends State<PayrollPage> {
   void _generatePayroll() async {
     setState(() => _loading = true);
     try {
-      await context.read<ErpRepository>().generatePayroll(_month, _year);
+      await context.read<HrRepository>().generatePayroll(_month, _year);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Payroll generated for $_month $_year")));
         _loadPayrollHistory(); // Refresh table
@@ -93,7 +96,7 @@ class _PayrollPageState extends State<PayrollPage> {
                   onPressed: saving ? null : () async {
                     setDialogState(() => saving = true);
                     try {
-                      await context.read<ErpRepository>().updatePayrollRecord(payroll['id'], {
+                      await context.read<HrRepository>().updatePayrollRecord(payroll['id'], {
                         'bonuses': double.parse(bonusesController.text),
                         'deductions': double.parse(deductionsController.text),
                       });
@@ -119,7 +122,7 @@ class _PayrollPageState extends State<PayrollPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
         title: const Text("PAYROLL"),
         backgroundColor: AppTheme.surfaceDark,
@@ -229,3 +232,4 @@ class _PayrollPageState extends State<PayrollPage> {
     );
   }
 }
+

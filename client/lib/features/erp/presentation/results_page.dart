@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../data/erp_repository.dart';
+import '../data/repositories/academic_repository.dart';
+import '../data/repositories/hr_repository.dart';
+import '../data/repositories/inventory_repository.dart';
+import '../data/repositories/collaboration_repository.dart';
 import '../../../core/theme.dart';
 
 class ResultsPage extends StatefulWidget {
@@ -22,7 +25,7 @@ class _ResultsPageState extends State<ResultsPage> {
   void _generateReport() async {
     setState(() => _loading = true);
     try {
-      final data = await context.read<ErpRepository>().generateTermReport(_classId, _term, _year);
+      final data = await context.read<AcademicRepository>().generateTermReport(_classId, _term, _year);
       if (mounted) {
         setState(() {
           _report = data;
@@ -40,7 +43,7 @@ class _ResultsPageState extends State<ResultsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text("TERM RESULTS")),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -105,3 +108,4 @@ class _ResultsPageState extends State<ResultsPage> {
     );
   }
 }
+

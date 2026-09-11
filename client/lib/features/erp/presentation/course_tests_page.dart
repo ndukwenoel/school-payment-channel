@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../data/erp_repository.dart';
+import '../../auth/presentation/auth_bloc.dart';
+import '../data/repositories/academic_repository.dart';
+import '../data/repositories/hr_repository.dart';
+import '../data/repositories/inventory_repository.dart';
+import '../data/repositories/collaboration_repository.dart';
 import '../../../core/theme.dart';
 
 /// Displays all course tests for the school, grouped by classroom.
@@ -29,7 +33,7 @@ class _CourseTestsPageState extends State<CourseTestsPage> {
   Future<void> _loadData() async {
     setState(() => _loading = true);
     try {
-      final repo = context.read<ErpRepository>();
+      final repo = context.read<AcademicRepository>();
       final results = await Future.wait([
         repo.getClassrooms(),
         repo.getCourseTests(classroomId: _selectedClassroomId),
@@ -57,7 +61,7 @@ class _CourseTestsPageState extends State<CourseTestsPage> {
       _loading = true;
     });
     try {
-      final tests = await context.read<ErpRepository>().getCourseTests(
+      final tests = await context.read<AcademicRepository>().getCourseTests(
             classroomId: classroomId,
           );
       if (mounted) setState(() { _tests = tests; _loading = false; });
@@ -78,7 +82,7 @@ class _CourseTestsPageState extends State<CourseTestsPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -185,7 +189,7 @@ class _CourseTestsPageState extends State<CourseTestsPage> {
                         return;
                       }
                       try {
-                        await context.read<ErpRepository>().createCourseTest({
+                        await context.read<AcademicRepository>().createCourseTest({
                           'title': titleCtrl.text,
                           'test_type': testType,
                           'max_score': maxScore,
@@ -219,48 +223,56 @@ class _CourseTestsPageState extends State<CourseTestsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
-      appBar: AppBar(
-        backgroundColor: AppTheme.voidBlack,
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('COURSE TESTS',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2)),
-            Text('Manage tests & record scores',
-                style: TextStyle(color: AppTheme.textMuted50, fontSize: 11)),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showCreateTestDialog,
-        backgroundColor: AppTheme.limeLight,
-        foregroundColor: Colors.black,
-        icon: const Icon(Icons.add),
-        label: const Text('NEW TEST', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
-      body: Column(
-        children: [
-          _buildClassroomFilter(),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _tests.isEmpty
-                    ? _buildEmptyState()
-                    : RefreshIndicator(
-                        onRefresh: _loadData,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(20),
-                          itemCount: _tests.length,
-                          itemBuilder: (context, index) {
-                            return _buildTestCard(_tests[index]);
-                          },
-                        ),
-                      ),
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        String role = '';
+        if (state is AuthAuthenticated) role = state.role;
+        bool isAdmin = role == 'admin' || role == 'school_admin' || role == 'super_admin' || role == 'superadmin';
+
+        return Scaffold(
+          backgroundColor: AppTheme.background,
+          appBar: AppBar(
+            backgroundColor: AppTheme.background,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(isAdmin ? 'ACADEMIC ASSESSMENTS' : 'COURSE TESTS',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                Text(isAdmin ? 'Review school-wide tests & exams' : 'Manage tests & record scores',
+                    style: const TextStyle(color: AppTheme.textMuted50, fontSize: 11)),
+              ],
+            ),
           ),
-        ],
-      ),
+          floatingActionButton: isAdmin ? null : FloatingActionButton.extended(
+            onPressed: _showCreateTestDialog,
+            backgroundColor: AppTheme.limeLight,
+            foregroundColor: Colors.black,
+            icon: const Icon(Icons.add),
+            label: const Text('NEW TEST', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          body: Column(
+            children: [
+              _buildClassroomFilter(),
+              Expanded(
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _tests.isEmpty
+                        ? _buildEmptyState()
+                        : RefreshIndicator(
+                            onRefresh: _loadData,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.all(20),
+                              itemCount: _tests.length,
+                              itemBuilder: (context, index) {
+                                return _buildTestCard(_tests[index], isAdmin);
+                              },
+                            ),
+                          ),
+              ),
+            ],
+          ),
+        );
+      }
     );
   }
 
@@ -269,7 +281,7 @@ class _CourseTestsPageState extends State<CourseTestsPage> {
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A0A0A),
+        color: Colors.white,
         border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.06))),
       ),
       child: ListView(
@@ -306,7 +318,7 @@ class _CourseTestsPageState extends State<CourseTestsPage> {
     );
   }
 
-  Widget _buildTestCard(Map<String, dynamic> test) {
+  Widget _buildTestCard(Map<String, dynamic> test, bool isAdmin) {
     final typeColors = {
       'exam': Colors.redAccent,
       'test': AppTheme.blueVibrant,
@@ -346,7 +358,7 @@ class _CourseTestsPageState extends State<CourseTestsPage> {
                 children: [
                   Text(test['title'],
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                          fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.textDark)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -363,9 +375,9 @@ class _CourseTestsPageState extends State<CourseTestsPage> {
             ),
             Column(
               children: [
-                Icon(Icons.edit_note, color: AppTheme.limeLight, size: 20),
+                Icon(isAdmin ? Icons.visibility : Icons.edit_note, color: AppTheme.limeLight, size: 20),
                 const SizedBox(height: 4),
-                Text('Enter\nScores',
+                Text(isAdmin ? 'Review\nScores' : 'Enter\nScores',
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: AppTheme.limeLight, fontSize: 10)),
               ],
@@ -406,7 +418,7 @@ class _CourseTestsPageState extends State<CourseTestsPage> {
           Icon(Icons.assignment_outlined, size: 64, color: AppTheme.textMuted50),
           const SizedBox(height: 16),
           const Text('No tests found',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white70)),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
           const SizedBox(height: 8),
           const Text('Tap + NEW TEST to create your first course test.',
               style: TextStyle(color: AppTheme.textMuted50, fontSize: 13)),
@@ -415,3 +427,4 @@ class _CourseTestsPageState extends State<CourseTestsPage> {
     );
   }
 }
+

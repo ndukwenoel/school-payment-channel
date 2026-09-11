@@ -10,7 +10,7 @@ class NotificationHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text("NOTIFICATIONS")),
       body: FutureBuilder<List<NotificationLog>>(
         future: context.read<NotificationRepository>().getHistory(),

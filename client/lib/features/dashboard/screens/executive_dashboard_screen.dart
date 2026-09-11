@@ -24,7 +24,7 @@ class _ExecutiveDashboardScreenState extends State<ExecutiveDashboardScreen> {
   Future<void> _fetchAnalytics() async {
     setState(() => _isLoading = true);
     try {
-      final response = await _apiClient.dio.get('/api/v1/finance/analytics/executive');
+      final response = await _apiClient.dio.get('/reports/executive-analytics');
       if (mounted) {
         setState(() {
           _analyticsData = response.data;
@@ -49,16 +49,17 @@ class _ExecutiveDashboardScreenState extends State<ExecutiveDashboardScreen> {
       return const Center(child: Text("No data available."));
     }
 
-    final double totalRevenue = (_analyticsData!['total_revenue'] ?? 0).toDouble();
-    final double totalExpenses = (_analyticsData!['total_expenses'] ?? 0).toDouble();
-    final double netProfit = (_analyticsData!['net_profit'] ?? 0).toDouble();
-    final int totalInvoices = _analyticsData!['total_invoices'] ?? 0;
-    final int paidInvoices = _analyticsData!['paid_invoices'] ?? 0;
-    final int unpaidInvoices = _analyticsData!['unpaid_invoices'] ?? 0;
-    final List<dynamic> recentExpenses = _analyticsData!['recent_expenses'] ?? [];
+    final double totalPlatformVolume = (_analyticsData!['total_platform_volume'] ?? 0).toDouble();
+    final int totalTransactions = _analyticsData!['total_transactions'] ?? 0;
+    final int totalInvoicesIssued = _analyticsData!['total_invoices_issued'] ?? 0;
+    final double totalPayrollProcessed = (_analyticsData!['total_payroll_processed'] ?? 0).toDouble();
+    final int activeSchools = _analyticsData!['active_schools'] ?? 0;
+    final double saasRevenueCollected = (_analyticsData!['saas_revenue_collected'] ?? 0).toDouble();
+    final int totalStudents = _analyticsData!['total_students'] ?? 0;
+    final int totalUsers = _analyticsData!['total_users'] ?? 0;
 
     return Scaffold(
-      backgroundColor: Colors.transparent, // Background provided by MainLayout
+      backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -67,63 +68,28 @@ class _ExecutiveDashboardScreenState extends State<ExecutiveDashboardScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("EXECUTIVE DASHBOARD", style: TextStyle(color: AppTheme.textMuted, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.bold)),
-                IconButton(icon: const Icon(Icons.refresh, color: AppTheme.sageGreen), onPressed: _fetchAnalytics),
+                const Text("ENTERPRISE SAAS DASHBOARD", style: TextStyle(color: AppTheme.textMuted, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                IconButton(icon: const Icon(Icons.refresh, color: AppTheme.primaryBlue), onPressed: _fetchAnalytics),
               ],
             ),
             const SizedBox(height: 24),
             
-            // KPIs
+            // Tier 1 KPIs: Money
             Row(
               children: [
-                Expanded(child: _buildKpiCard("TOTAL REVENUE", "₦${totalRevenue.toStringAsFixed(2)}", Icons.trending_up, AppTheme.sageGreen)),
+                Expanded(child: _buildKpiCard("PLATFORM VOLUME", "₦${totalPlatformVolume.toStringAsFixed(2)}", Icons.account_balance_wallet, AppTheme.sageGreen)),
                 const SizedBox(width: 16),
-                Expanded(child: _buildKpiCard("TOTAL EXPENSES", "₦${totalExpenses.toStringAsFixed(2)}", Icons.trending_down, Colors.redAccent)),
+                Expanded(child: _buildKpiCard("PAYROLL PROCESSED", "₦${totalPayrollProcessed.toStringAsFixed(2)}", Icons.payments, Colors.orangeAccent)),
                 const SizedBox(width: 16),
-                Expanded(child: _buildKpiCard("NET PROFIT", "₦${netProfit.toStringAsFixed(2)}", Icons.account_balance, AppTheme.blueVibrant)),
+                Expanded(child: _buildKpiCard("SAAS REVENUE", "₦${saasRevenueCollected.toStringAsFixed(2)}", Icons.verified, AppTheme.primaryBlue)),
               ],
             ),
             const SizedBox(height: 24),
             
+            // Tier 2 KPIs: Engagement
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Invoices Overview
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceLight,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("INVOICE METRICS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        const SizedBox(height: 24),
-                        _buildInvoiceStatRow("Total Issued", totalInvoices, AppTheme.textMuted),
-                        const SizedBox(height: 16),
-                        _buildInvoiceStatRow("Paid", paidInvoices, AppTheme.sageGreen),
-                        const SizedBox(height: 16),
-                        _buildInvoiceStatRow("Unpaid", unpaidInvoices, Colors.orangeAccent),
-                        const SizedBox(height: 24),
-                        LinearProgressIndicator(
-                          value: totalInvoices == 0 ? 0 : paidInvoices / totalInvoices,
-                          backgroundColor: AppTheme.textMuted.withOpacity(0.2),
-                          color: AppTheme.sageGreen,
-                          minHeight: 8,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        const SizedBox(height: 8),
-                        Text("${totalInvoices == 0 ? 0 : (paidInvoices / totalInvoices * 100).toStringAsFixed(1)}% Collection Rate", style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 24),
-                
-                // Recent Expenses
                 Expanded(
                   flex: 2,
                   child: Container(
@@ -135,40 +101,38 @@ class _ExecutiveDashboardScreenState extends State<ExecutiveDashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("RECENT EXPENSES", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const Text("PLATFORM ENGAGEMENT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildMiniStat("Active Schools", activeSchools.toString(), Icons.school),
+                            _buildMiniStat("Total Users", totalUsers.toString(), Icons.people_alt),
+                            _buildMiniStat("Total Students", totalStudents.toString(), Icons.face),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 24),
+                
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLight,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("TRANSACTION METRICS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 24),
+                        _buildInvoiceStatRow("Successful Payments", totalTransactions, AppTheme.sageGreen),
                         const SizedBox(height: 16),
-                        if (recentExpenses.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Text("No recent expenses logged.", style: TextStyle(color: AppTheme.textMuted)),
-                          )
-                        else
-                          ...recentExpenses.map((e) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 16,
-                                      backgroundColor: AppTheme.orangeAccent.withOpacity(0.2),
-                                      child: const Icon(Icons.receipt, size: 16, color: AppTheme.orangeAccent),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(e['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                                        Text("${e['category']} • ${e['date'].toString().split('T')[0]}", style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                Text("₦${e['amount']}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
-                              ],
-                            ),
-                          )),
+                        _buildInvoiceStatRow("Invoices Issued", totalInvoicesIssued, AppTheme.primaryBlue),
                       ],
                     ),
                   ),
@@ -200,7 +164,7 @@ class _ExecutiveDashboardScreenState extends State<ExecutiveDashboardScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
         ],
       ),
     );
@@ -218,6 +182,17 @@ class _ExecutiveDashboardScreenState extends State<ExecutiveDashboardScreen> {
           ],
         ),
         Text(value.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+      ],
+    );
+  }
+
+  Widget _buildMiniStat(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: AppTheme.primaryBlue, size: 28),
+        const SizedBox(height: 8),
+        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
       ],
     );
   }

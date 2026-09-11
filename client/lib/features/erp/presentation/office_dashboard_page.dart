@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../data/erp_repository.dart';
+import '../data/repositories/academic_repository.dart';
+import '../data/repositories/hr_repository.dart';
+import '../data/repositories/inventory_repository.dart';
+import '../data/repositories/collaboration_repository.dart';
 import '../../../core/theme.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,7 +13,7 @@ class OfficeDashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -102,11 +105,11 @@ class OfficeDashboardPage extends StatelessWidget {
 
   Widget _buildInventoryAlerts(BuildContext context) {
     return FutureBuilder<List<dynamic>>(
-      future: context.read<ErpRepository>().getInventory(),
+      future: context.read<InventoryRepository>().getInventory(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator());
         final items = snapshot.data ?? [];
-        final lowStock = items.where((i) => i['quantity'] < 10).toList();
+        final lowStock = items.where((i) => i.quantity < 10).toList();
 
         if (lowStock.isEmpty) return const Text("Inventory healthy.", style: TextStyle(color: AppTheme.textMuted50));
 
@@ -118,8 +121,8 @@ class OfficeDashboardPage extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: ListTile(
-              title: Text(item['name'], style: const TextStyle(fontSize: 14)),
-              trailing: Text("${item['quantity']} left", style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              title: Text(item.name, style: const TextStyle(fontSize: 14)),
+              trailing: Text("${item.quantity} left", style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
             ),
           )).toList(),
         );
@@ -127,3 +130,5 @@ class OfficeDashboardPage extends StatelessWidget {
     );
   }
 }
+
+

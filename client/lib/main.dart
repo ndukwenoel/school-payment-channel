@@ -19,7 +19,14 @@ import 'features/payments/presentation/school_store_page.dart';
 import 'features/payments/data/payment_models.dart';
 import 'features/notifications/presentation/notification_history_page.dart';
 import 'features/notifications/data/notification_repository.dart';
-import 'features/erp/data/erp_repository.dart';
+import 'features/erp/data/repositories/academic_repository.dart';
+import 'features/erp/data/repositories/hr_repository.dart';
+import 'features/erp/data/repositories/inventory_repository.dart';
+import 'features/erp/data/repositories/collaboration_repository.dart';
+import 'features/erp/presentation/bloc/academic_cubit.dart';
+import 'features/erp/presentation/bloc/hr_cubit.dart';
+import 'features/erp/presentation/bloc/inventory_cubit.dart';
+import 'features/erp/presentation/bloc/collaboration_cubit.dart';
 import 'features/erp/presentation/academic_dashboard_page.dart';
 import 'features/erp/presentation/office_dashboard_page.dart';
 import 'features/erp/presentation/fee_management_page.dart';
@@ -44,9 +51,15 @@ import 'features/erp/presentation/subjects_page.dart';
 import 'features/erp/presentation/attendance_page.dart';
 import 'features/payments/presentation/installment_management_page.dart';
 import 'features/dashboard/screens/executive_dashboard_screen.dart';
+import 'features/dashboard/screens/school_management_screen.dart';
+import 'features/dashboard/screens/user_management_screen.dart';
+import 'features/dashboard/screens/platform_billing_screen.dart';
+import 'features/dashboard/screens/global_settings_screen.dart';
+import 'features/dashboard/screens/audit_logs_screen.dart';
 import 'features/dashboard/screens/parent_dashboard_screen.dart';
-import 'features/super_admin/presentation/super_admin_dashboard.dart';
+
 import 'features/dashboard/main_layout.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -68,23 +81,50 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (context) => dashboardRepository),
         RepositoryProvider(create: (context) => paymentRepository),
         RepositoryProvider(create: (context) => notificationRepository),
-        RepositoryProvider(create: (context) => ErpRepository(apiClient)),
+        RepositoryProvider(create: (context) => AcademicRepository(apiClient)),
+        RepositoryProvider(create: (context) => HrRepository(apiClient)),
+        RepositoryProvider(create: (context) => InventoryRepository(apiClient)),
+        RepositoryProvider(create: (context) => CollaborationRepository(apiClient)),
         RepositoryProvider(create: (context) => LedgerRepository(apiClient)),
       ],
-      child: BlocProvider(
-        create: (context) => AuthBloc(authRepository)..add(AuthCheckStatus()),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => AuthBloc(authRepository)..add(AuthCheckStatus()),
+          ),
+          BlocProvider(
+            create: (context) => AcademicCubit(context.read<AcademicRepository>()),
+          ),
+          BlocProvider(
+            create: (context) => HrCubit(context.read<HrRepository>()),
+          ),
+          BlocProvider(
+            create: (context) => InventoryCubit(context.read<InventoryRepository>()),
+          ),
+          BlocProvider(
+            create: (context) => CollaborationCubit(context.read<CollaborationRepository>()),
+          ),
+        ],
         child: const AppView(),
       ),
     );
   }
 }
 
-class AppView extends StatelessWidget {
+class AppView extends StatefulWidget {
   const AppView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final router = GoRouter(
+  State<AppView> createState() => _AppViewState();
+}
+
+class _AppViewState extends State<AppView> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _router = GoRouter(
       initialLocation: '/',
       redirect: (context, state) {
         final authState = context.read<AuthBloc>().state;
@@ -94,7 +134,6 @@ class AppView extends StatelessWidget {
         if (!isAuth && !isAuthRoute) return '/';
         if (isAuth && isAuthRoute) {
           final role = (authState as AuthAuthenticated).role;
-          if (role == 'super_admin') return '/super-admin';
           if (role == 'parent') return '/parent-dashboard';
           return '/dashboard';
         }
@@ -108,10 +147,6 @@ class AppView extends StatelessWidget {
         GoRoute(
           path: '/register',
           builder: (context, state) => const RegisterPage(),
-        ),
-        GoRoute(
-          path: '/super-admin',
-          builder: (context, state) => const SuperAdminDashboard(),
         ),
         GoRoute(
           path: '/parent-dashboard',
@@ -265,21 +300,45 @@ class AppView extends StatelessWidget {
               path: '/erp/executive',
               builder: (context, state) => const ExecutiveDashboardScreen(),
             ),
+            GoRoute(
+              path: '/erp/school-management',
+              builder: (context, state) => const SchoolManagementScreen(),
+            ),
+            GoRoute(
+              path: '/erp/user-management',
+              builder: (context, state) => const UserManagementScreen(),
+            ),
+            GoRoute(
+              path: '/erp/platform-billing',
+              builder: (context, state) => const PlatformBillingScreen(),
+            ),
+            GoRoute(
+              path: '/erp/global-settings',
+              builder: (context, state) => const GlobalSettingsScreen(),
+            ),
+            GoRoute(
+              path: '/erp/audit-logs',
+              builder: (context, state) => const AuditLogsScreen(),
+            ),
           ],
         ),
       ],
     );
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        router.refresh();
+        _router.refresh();
       },
       child: MaterialApp.router(
-        title: 'Channel',
+        title: 'Channel Education Systems',
         theme: AppTheme.lightTheme,
-        routerConfig: router,
+        routerConfig: _router,
         debugShowCheckedModeBanner: false,
       ),
     );
   }
 }
+

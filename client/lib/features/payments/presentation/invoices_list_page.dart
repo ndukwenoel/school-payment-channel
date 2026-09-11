@@ -138,7 +138,7 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppTheme.voidBlack, width: 2),
+                border: Border.all(color: AppTheme.textDark, width: 2),
               ),
             ),
           )
@@ -469,7 +469,7 @@ class _InvoicesListPageState extends State<InvoicesListPage> {
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
-          colors: [AppTheme.voidBlack, AppTheme.voidBlack.withOpacity(0)],
+          colors: [AppTheme.textDark, AppTheme.textDark.withOpacity(0)],
           stops: const [0.8, 1.0],
         ),
       ),

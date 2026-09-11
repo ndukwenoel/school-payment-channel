@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../data/erp_repository.dart';
+import '../data/repositories/academic_repository.dart';
+import '../data/repositories/hr_repository.dart';
+import '../data/repositories/inventory_repository.dart';
+import '../data/repositories/collaboration_repository.dart';
 import '../../../core/theme.dart';
 import '../../dashboard/data/dashboard_repository.dart'; // For School info helpers if needed
 
@@ -25,7 +28,7 @@ class _BroadcastPageState extends State<BroadcastPage> {
     setState(() => _loading = true);
 
     try {
-      final repo = context.read<ErpRepository>();
+      final repo = context.read<CollaborationRepository>();
       
       await repo.createBroadcast({
         "title": _titleController.text,
@@ -50,7 +53,7 @@ class _BroadcastPageState extends State<BroadcastPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text("BROADCAST CENTER")),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -114,3 +117,4 @@ class _BroadcastPageState extends State<BroadcastPage> {
     );
   }
 }
+

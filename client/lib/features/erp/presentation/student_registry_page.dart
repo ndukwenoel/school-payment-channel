@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
-import '../data/erp_repository.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../auth/presentation/auth_bloc.dart';
+import '../data/repositories/academic_repository.dart';
+import '../data/repositories/hr_repository.dart';
+import '../data/repositories/inventory_repository.dart';
+import '../data/repositories/collaboration_repository.dart';
 import 'student_profile_page.dart';
 
 class StudentRegistryPage extends StatefulWidget {
@@ -28,7 +33,7 @@ class _StudentRegistryPageState extends State<StudentRegistryPage> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final repo = context.read<ErpRepository>();
+      final repo = context.read<AcademicRepository>();
       final results = await Future.wait([
         repo.getStudents(),
         repo.getClassrooms(),
@@ -165,7 +170,7 @@ class _StudentRegistryPageState extends State<StudentRegistryPage> {
                 Navigator.pop(ctx);
                 
                 try {
-                  await context.read<ErpRepository>().createStudent({
+                  await context.read<AcademicRepository>().createStudent({
                     'full_name': name,
                     'enrollment_number': enrollment,
                     'grade': grade,
@@ -258,7 +263,7 @@ class _StudentRegistryPageState extends State<StudentRegistryPage> {
                   onPressed: () async {
                     Navigator.pop(ctx);
                     try {
-                      await context.read<ErpRepository>().updateStudent(student['id'], {
+                      await context.read<AcademicRepository>().updateStudent(student['id'], {
                         'grade': currentGrade,
                         'classroom_id': currentClassroom,
                         'home_address': currentAddress,
@@ -289,7 +294,7 @@ class _StudentRegistryPageState extends State<StudentRegistryPage> {
     
     setState(() => _isLoading = true);
     try {
-      final response = await context.read<ErpRepository>().importStudents(result.files.single.path!);
+      final response = await context.read<AcademicRepository>().importStudents(result.files.single.path!);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Imported ${response['imported_count']} students.')));
       _loadData();
     } catch (e) {
@@ -333,7 +338,7 @@ class _StudentRegistryPageState extends State<StudentRegistryPage> {
               Navigator.pop(ctx);
               setState(() => _isLoading = true);
               try {
-                final response = await context.read<ErpRepository>().promoteStudents(currentGrade, newGrade.trim());
+                final response = await context.read<AcademicRepository>().promoteStudents(currentGrade, newGrade.trim());
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Promoted ${response['count']} students.')));
                 _loadData();
               } catch (e) {
@@ -353,39 +358,45 @@ class _StudentRegistryPageState extends State<StudentRegistryPage> {
     // Get unique grades for filter
     final grades = _students.map((e) => e['grade'].toString()).toSet().toList()..sort();
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Text('Student Registry'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        actions: [
-          PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert, color: Colors.black),
-            onSelected: (value) {
-              if (value == 'import') _importCsv();
-              if (value == 'promote') _showPromoteDialog();
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'import',
-                child: ListTile(leading: Icon(Icons.upload_file), title: Text('Import CSV'), contentPadding: EdgeInsets.zero),
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        String role = '';
+        if (state is AuthAuthenticated) role = state.role;
+        bool isAdmin = role == 'admin' || role == 'school_admin' || role == 'super_admin' || role == 'superadmin';
+
+        return Scaffold(
+          backgroundColor: Colors.grey[50],
+          appBar: AppBar(
+            title: Text(isAdmin ? 'Student Registry' : 'My Students'),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            actions: isAdmin ? [
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, color: Colors.black),
+                onSelected: (value) {
+                  if (value == 'import') _importCsv();
+                  if (value == 'promote') _showPromoteDialog();
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'import',
+                    child: ListTile(leading: Icon(Icons.upload_file), title: Text('Import CSV'), contentPadding: EdgeInsets.zero),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'promote',
+                    child: ListTile(leading: Icon(Icons.upgrade), title: Text('Promote Grade'), contentPadding: EdgeInsets.zero),
+                  ),
+                ],
               ),
-              const PopupMenuItem<String>(
-                value: 'promote',
-                child: ListTile(leading: Icon(Icons.upgrade), title: Text('Promote Grade'), contentPadding: EdgeInsets.zero),
-              ),
-            ],
+            ] : null,
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddStudentDialog,
-        icon: Icon(Icons.add),
-        label: Text('New Student'),
-      ),
-      body: _isLoading 
+          floatingActionButton: isAdmin ? FloatingActionButton.extended(
+            onPressed: _showAddStudentDialog,
+            icon: Icon(Icons.add),
+            label: Text('New Student'),
+          ) : null,
+          body: _isLoading 
         ? Center(child: CircularProgressIndicator())
         : Column(
             children: [
@@ -501,6 +512,9 @@ class _StudentRegistryPageState extends State<StudentRegistryPage> {
               )
             ],
           ),
+        );
+      },
     );
   }
 }
+

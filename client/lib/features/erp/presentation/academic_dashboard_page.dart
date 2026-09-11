@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../data/erp_repository.dart';
+import '../../auth/presentation/auth_bloc.dart';
+import '../data/repositories/academic_repository.dart';
+import '../data/repositories/hr_repository.dart';
+import '../data/repositories/inventory_repository.dart';
+import '../data/repositories/collaboration_repository.dart';
 import '../../../core/theme.dart';
 
 class AcademicDashboardPage extends StatelessWidget {
@@ -10,30 +14,122 @@ class AcademicDashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              SizedBox(height: 32),
-              _buildSectionTitle("ACADEMIC OVERVIEW"),
-              SizedBox(height: 16),
-              _buildQuickStats(context),
-              SizedBox(height: 32),
-              _buildSectionTitle("MY CLASSROOMS"),
-              SizedBox(height: 16),
-              _buildClassroomList(context),
-              SizedBox(height: 32),
-              _buildSectionTitle("COURSE TESTS"),
-              SizedBox(height: 16),
-              _buildCourseTestCard(context),
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            String role = '';
+            if (state is AuthAuthenticated) role = state.role;
+            
+            if (role == 'admin' || role == 'school_admin' || role == 'super_admin' || role == 'superadmin') {
+              return _buildAdminDashboard(context);
+            }
+            return _buildTeacherDashboard(context);
+          }
+        ),
+      ),
+    );
+  }
 
+  Widget _buildTeacherDashboard(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(context),
+          SizedBox(height: 32),
+          _buildSectionTitle("ACADEMIC OVERVIEW"),
+          SizedBox(height: 16),
+          _buildQuickStats(context),
+          SizedBox(height: 32),
+          _buildSectionTitle("MY CLASSROOMS"),
+          SizedBox(height: 16),
+          _buildClassroomList(context),
+          SizedBox(height: 32),
+          _buildSectionTitle("COURSE TESTS"),
+          SizedBox(height: 16),
+          _buildCourseTestCard(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdminDashboard(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("ADMIN ACADEMICS", style: TextStyle(color: AppTheme.primaryBlue, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                  SizedBox(height: 4),
+                  const Text("School Curriculum", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ],
           ),
-        ),
+          SizedBox(height: 32),
+          _buildSectionTitle("SCHOOL PERFORMANCE"),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(child: _buildStatCard("Total Classes", "24", Icons.class_outlined)),
+              SizedBox(width: 12),
+              Expanded(child: _buildStatCard("Total Teachers", "48", Icons.badge_outlined)),
+              SizedBox(width: 12),
+              Expanded(child: _buildStatCard("Avg Attendance", "94%", Icons.calendar_today_outlined)),
+            ],
+          ),
+          SizedBox(height: 32),
+          _buildSectionTitle("GLOBAL CURRICULUM"),
+          SizedBox(height: 16),
+          _buildAdminActionCard(context, "Manage Classes & Sections", "Create classes, assign form teachers.", Icons.holiday_village),
+          SizedBox(height: 16),
+          _buildAdminActionCard(context, "Subject Allocation", "Assign teachers to specific subjects.", Icons.menu_book),
+          SizedBox(height: 16),
+          _buildAdminActionCard(context, "Academic Calendar", "Manage terms, holidays, and sessions.", Icons.calendar_month),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdminActionCard(BuildContext context, String title, String subtitle, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryBlue.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppTheme.primaryBlue, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.textDark)),
+                SizedBox(height: 4),
+                Text(subtitle, style: const TextStyle(color: AppTheme.textMuted50, fontSize: 12)),
+              ],
+            ),
+          ),
+          const Icon(Icons.arrow_forward_ios, color: AppTheme.primaryBlue, size: 16),
+        ],
       ),
     );
   }
@@ -104,7 +200,7 @@ class AcademicDashboardPage extends StatelessWidget {
 
   Widget _buildClassroomList(BuildContext context) {
     return FutureBuilder<List<dynamic>>(
-      future: context.read<ErpRepository>().getClassrooms(),
+      future: context.read<AcademicRepository>().getClassrooms(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator());
         final rooms = snapshot.data ?? [];
@@ -120,7 +216,7 @@ class AcademicDashboardPage extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF111111),
+                color: AppTheme.cardBackground,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -180,7 +276,7 @@ class AcademicDashboardPage extends StatelessWidget {
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
-                          color: Colors.white)),
+                          color: AppTheme.textDark)),
                   SizedBox(height: 4),
                   Text('Create tests, enter scores & view rankings',
                       style: TextStyle(
@@ -196,3 +292,4 @@ class AcademicDashboardPage extends StatelessWidget {
     );
   }
 }
+

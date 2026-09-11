@@ -15,6 +15,8 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _obscurePassword = true;
+  bool _rememberMe = false;
 
   @override
   Widget build(BuildContext context) {
@@ -64,12 +66,34 @@ class _LoginPageState extends State<LoginPage> {
                          SizedBox(height: 16),
                          TextFormField(
                            controller: _passwordController,
-                           decoration: const InputDecoration(
+                           decoration: InputDecoration(
                              labelText: "Password",
-                             prefixIcon: Icon(Icons.lock_outline)
+                             prefixIcon: const Icon(Icons.lock_outline),
+                             suffixIcon: IconButton(
+                               icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                               onPressed: () {
+                                 setState(() {
+                                   _obscurePassword = !_obscurePassword;
+                                 });
+                               },
+                             ),
                            ),
-                           obscureText: true,
+                           obscureText: _obscurePassword,
                            validator: (val) => val!.isEmpty ? 'Enter password' : null,
+                         ),
+                         SizedBox(height: 16),
+                         Row(
+                           children: [
+                             Checkbox(
+                               value: _rememberMe,
+                               onChanged: (val) {
+                                 setState(() {
+                                   _rememberMe = val ?? false;
+                                 });
+                               },
+                             ),
+                             const Text("Remember Me", style: TextStyle(color: AppTheme.textMuted)),
+                           ],
                          ),
                          SizedBox(height: 24),
                          SizedBox(
@@ -81,7 +105,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ? null 
                                   : () {
                                      if (_formKey.currentState!.validate()) {
-                                       context.read<AuthBloc>().add(AuthLogin(_emailController.text, _passwordController.text));
+                                       context.read<AuthBloc>().add(AuthLogin(_emailController.text, _passwordController.text, rememberMe: _rememberMe));
                                      }
                                   },
                                  child: state is AuthLoading ? const CircularProgressIndicator() : Text("Login"),

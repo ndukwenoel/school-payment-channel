@@ -295,27 +295,44 @@ class SchoolBase(BaseModel):
     name: str
     address: Optional[str] = None
     contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
     logo_url: Optional[str] = None
     allowed_installment_options: str = "2,3,4"
     enable_late_fees: bool = False
     late_fee_percentage: float = 0.0
     late_fee_grace_period_days: int = 0
+    status: str = "active"
+    subscription_plan: Optional[str] = None
+    subscription_due_date: Optional[datetime] = None
+    modules_enabled: Optional[str] = None
 
 class SchoolCreate(SchoolBase):
     pass
+
+class SchoolOnboardRequest(BaseModel):
+    school: SchoolCreate
+    admin_email: str
+    admin_password: str
+    admin_name: str
 
 class SchoolUpdate(BaseModel):
     name: Optional[str] = None
     address: Optional[str] = None
     contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
     logo_url: Optional[str] = None
     enable_late_fees: Optional[bool] = None
     late_fee_percentage: Optional[float] = None
     late_fee_grace_period_days: Optional[int] = None
+    status: Optional[str] = None
+    subscription_plan: Optional[str] = None
+    subscription_due_date: Optional[datetime] = None
+    modules_enabled: Optional[str] = None
 
 class School(SchoolBase):
     id: int
-
+    created_at: datetime
+    
     class Config:
         from_attributes = True
 
@@ -726,6 +743,56 @@ class Expense(ExpenseBase):
     school_id: int
     recorded_by_id: int
 
+    class Config:
+        from_attributes = True
+
+class PlatformInvoiceBase(BaseModel):
+    school_id: int
+    amount_due: float
+    status: str = "unpaid"
+    billing_period: Optional[str] = None
+    due_date: Optional[datetime] = None
+
+class PlatformInvoiceCreate(PlatformInvoiceBase):
+    pass
+
+class PlatformInvoice(PlatformInvoiceBase):
+    id: int
+    created_at: datetime
+    school: Optional[School] = None
+
+    class Config:
+        from_attributes = True
+
+class SystemSettingsBase(BaseModel):
+    paystack_public_key: Optional[str] = None
+    paystack_secret_key: Optional[str] = None
+    platform_fee_percentage: float = 1.5
+
+class SystemSettingsUpdate(SystemSettingsBase):
+    pass
+
+class SystemSettings(SystemSettingsBase):
+    id: int
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class AuditLogBase(BaseModel):
+    school_id: Optional[int] = None
+    user_id: Optional[int] = None
+    action: str
+    table_name: str
+    record_id: str
+    old_values: Optional[str] = None
+    new_values: Optional[str] = None
+    ip_address: Optional[str] = None
+
+class AuditLog(AuditLogBase):
+    id: int
+    timestamp: datetime
+    
     class Config:
         from_attributes = True
 

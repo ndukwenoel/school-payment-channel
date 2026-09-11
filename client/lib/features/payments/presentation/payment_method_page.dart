@@ -306,7 +306,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
-          colors: [AppTheme.voidBlack, AppTheme.voidBlack.withOpacity(0)],
+          colors: [AppTheme.textDark, AppTheme.textDark.withOpacity(0)],
           stops: const [0.8, 1.0],
         ),
       ),

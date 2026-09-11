@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ... import database, models, schemas
-from .auth import get_db, get_current_user
+from .auth import get_db, get_current_user, CheckRole
 from ...services.collection import CollectionService
 
 router = APIRouter(
@@ -38,9 +38,7 @@ def create_payment_bundle(bundle_data: schemas.PaymentBundleCreate, db: Session 
     return CollectionService.create_payment_bundle(db=db, invoice_ids=bundle_data.invoice_ids, current_user=current_user)
 
 @router.get("/unmatched")
-def get_unmatched_payments(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "bursar"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
+def get_unmatched_payments(db: Session = Depends(get_db), current_user: models.User = Depends(CheckRole(["admin", "bursar"]))):
     unmatched = db.query(models.UnmatchedPayment).filter(
         models.UnmatchedPayment.school_id == current_user.school_id,
         models.UnmatchedPayment.status == "pending"
@@ -61,9 +59,7 @@ def get_unmatched_payments(db: Session = Depends(get_db), current_user: models.U
     ]
 
 @router.post("/unmatched/{payment_id}/resolve")
-def resolve_unmatched_payment(payment_id: int, student_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "bursar"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
+def resolve_unmatched_payment(payment_id: int, student_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(CheckRole(["admin", "bursar"]))):
         
     payment = db.query(models.UnmatchedPayment).filter(
         models.UnmatchedPayment.id == payment_id,

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../data/erp_repository.dart';
+import '../data/repositories/academic_repository.dart';
+import '../data/repositories/hr_repository.dart';
+import '../data/repositories/inventory_repository.dart';
+import '../data/repositories/collaboration_repository.dart';
 
 class StaffRegistryPage extends StatefulWidget {
   const StaffRegistryPage({Key? key}) : super(key: key);
@@ -24,7 +27,7 @@ class _StaffRegistryPageState extends State<StaffRegistryPage> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final repo = context.read<ErpRepository>();
+      final repo = context.read<HrRepository>();
       final staff = await repo.getStaff();
       
       setState(() {
@@ -110,7 +113,7 @@ class _StaffRegistryPageState extends State<StaffRegistryPage> {
                 Navigator.pop(ctx);
                 
                 try {
-                  await context.read<ErpRepository>().createStaff({
+                  await context.read<HrRepository>().createStaff({
                     'full_name': fullName,
                     'email': email,
                     'employee_id': employeeId,
@@ -227,3 +230,4 @@ class _StaffRegistryPageState extends State<StaffRegistryPage> {
     );
   }
 }
+

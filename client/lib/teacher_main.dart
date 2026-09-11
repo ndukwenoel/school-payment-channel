@@ -8,7 +8,7 @@ import 'core/offline_service.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/auth_bloc.dart';
 import 'features/auth/presentation/login_page.dart';
-import 'features/erp/data/erp_repository.dart';
+import 'features/erp/data/repositories/academic_repository.dart';
 import 'features/teacher/presentation/teacher_dashboard.dart';
 // Reuse existing features
 import 'features/erp/presentation/academic_dashboard_page.dart';
@@ -31,12 +31,12 @@ class TeacherApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final apiClient = ApiClient();
     final authRepository = AuthRepository(apiClient);
-    final erpRepository = ErpRepository(apiClient, offlineService: offlineService);
+    final academicRepository = AcademicRepository(apiClient, offlineService: offlineService);
 
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider(create: (_) => authRepository),
-        RepositoryProvider(create: (_) => erpRepository),
+        RepositoryProvider(create: (_) => academicRepository),
         RepositoryProvider(create: (_) => offlineService), // Expose valid offline service
       ],
       child: BlocProvider(
@@ -78,3 +78,4 @@ class TeacherApp extends StatelessWidget {
     ],
   );
 }
+

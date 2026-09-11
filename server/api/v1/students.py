@@ -21,7 +21,9 @@ def read_students(
     current_user: models.User = Depends(get_current_user)
 ):
     if current_user.school_id is None:
-         raise HTTPException(status_code=400, detail="User does not belong to a school")
+        if current_user.role == "super_admin" or current_user.role == "superadmin":
+            return db.query(models.Student).offset(skip).limit(limit).all()
+        raise HTTPException(status_code=400, detail="User does not belong to a school")
     
     students = db.query(models.Student).filter(models.Student.school_id == current_user.school_id).offset(skip).limit(limit).all()
     

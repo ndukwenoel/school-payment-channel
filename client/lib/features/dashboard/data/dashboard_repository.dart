@@ -183,6 +183,19 @@ class DashboardRepository {
     }
   }
 
+  Future<Map<String, dynamic>> getSystemStats() async {
+    try {
+      final response = await _apiClient.dio.get('/reports/system-summary');
+      return response.data;
+    } catch (e) {
+      return {
+        'total_schools': 0,
+        'total_students': 0,
+        'total_users': 0
+      };
+    }
+  }
+
   Future<List<dynamic>> getFeeTemplates() async {
     final response = await _apiClient.dio.get('/invoices/templates');
     return response.data;

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../data/erp_repository.dart';
+import '../data/repositories/academic_repository.dart';
+import '../data/repositories/hr_repository.dart';
+import '../data/repositories/inventory_repository.dart';
+import '../data/repositories/collaboration_repository.dart';
 import '../../../core/theme.dart';
 
 class InventoryPage extends StatefulWidget {
@@ -23,7 +26,7 @@ class _InventoryPageState extends State<InventoryPage> {
   void _loadInventory() async {
     setState(() => _loading = true);
     try {
-      final items = await context.read<ErpRepository>().getInventory();
+      final items = await context.read<InventoryRepository>().getInventory();
       if (mounted) {
         setState(() => _items = items);
       }
@@ -66,7 +69,7 @@ class _InventoryPageState extends State<InventoryPage> {
                     if (nameController.text.isEmpty || categoryController.text.isEmpty) return;
                     setDialogState(() => saving = true);
                     try {
-                      await context.read<ErpRepository>().createInventoryItem({
+                      await context.read<InventoryRepository>().createInventoryItem({
                         'name': nameController.text,
                         'category': categoryController.text,
                         'unit_price': double.tryParse(priceController.text),
@@ -125,7 +128,7 @@ class _InventoryPageState extends State<InventoryPage> {
                     if (change == null || change == 0) return;
                     setDialogState(() => saving = true);
                     try {
-                      await context.read<ErpRepository>().updateStock(item['id'], change);
+                      await context.read<InventoryRepository>().updateStock(item['id'], change);
                       if (mounted) {
                         Navigator.pop(context);
                         _loadInventory();
@@ -148,7 +151,7 @@ class _InventoryPageState extends State<InventoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
         title: const Text("INVENTORY"),
         backgroundColor: AppTheme.surfaceDark,
@@ -204,8 +207,9 @@ class _InventoryPageState extends State<InventoryPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddItemDialog,
         backgroundColor: AppTheme.limeLight,
-        child: const Icon(Icons.add, color: AppTheme.voidBlack),
+        child: const Icon(Icons.add, color: AppTheme.background),
       ),
     );
   }
 }
+

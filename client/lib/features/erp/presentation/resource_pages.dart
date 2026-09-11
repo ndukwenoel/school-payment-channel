@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../data/erp_repository.dart';
+import '../data/repositories/academic_repository.dart';
+import '../data/repositories/hr_repository.dart';
+import '../data/repositories/inventory_repository.dart';
+import '../data/repositories/collaboration_repository.dart';
 import '../../dashboard/data/dashboard_repository.dart';
 import '../../../core/theme.dart';
 import '../../../core/offline_exceptions.dart';
@@ -27,7 +30,7 @@ class _ResourceUploadPageState extends State<ResourceUploadPage> {
     setState(() => _loading = true);
 
     try {
-      await context.read<ErpRepository>().uploadResource({
+      await context.read<CollaborationRepository>().uploadResource({
         "title": _titleController.text,
         "file_url": _linkController.text,
         "type": _type,
@@ -56,7 +59,7 @@ class _ResourceUploadPageState extends State<ResourceUploadPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text("UPLOAD RESOURCE")),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -125,10 +128,10 @@ class _ResourceReviewPageState extends State<ResourceReviewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text("PENDING APPROVALS")),
       body: FutureBuilder<List<dynamic>>(
-        future: context.read<ErpRepository>().getPendingResources(),
+        future: context.read<CollaborationRepository>().getPendingResources(),
         builder: (context, snapshot) {
            if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator());
            final items = snapshot.data ?? [];
@@ -192,10 +195,11 @@ class _ResourceReviewPageState extends State<ResourceReviewPage> {
   
   void _updateStatus(int id, String status) async {
     try {
-      await context.read<ErpRepository>().updateResourceStatus(id, status);
+      await context.read<CollaborationRepository>().updateResourceStatus(id, status);
       setState(() {}); 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 }
+

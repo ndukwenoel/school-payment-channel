@@ -125,7 +125,7 @@ class _ManualPaymentsPageState extends State<ManualPaymentsPage> with SingleTick
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pending Approvals'),
-        backgroundColor: AppTheme.voidBlack,
+        backgroundColor: AppTheme.background,
         foregroundColor: Colors.white,
         bottom: TabBar(
           controller: _tabController,

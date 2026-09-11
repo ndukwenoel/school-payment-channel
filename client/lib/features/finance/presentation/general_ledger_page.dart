@@ -65,7 +65,7 @@ class _GeneralLedgerPageState extends State<GeneralLedgerPage> with SingleTicker
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('General Ledger'),
-        backgroundColor: AppTheme.voidBlack,
+        backgroundColor: AppTheme.background,
         foregroundColor: Colors.white,
         bottom: TabBar(
           controller: _tabController,

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../data/erp_repository.dart';
+import '../data/repositories/academic_repository.dart';
+import '../data/repositories/hr_repository.dart';
+import '../data/repositories/inventory_repository.dart';
+import '../data/repositories/collaboration_repository.dart';
 import '../../../core/theme.dart';
 
 /// Displays all students in a classroom for a specific [CourseTest]
@@ -44,7 +47,7 @@ class _TestResultsEntryPageState extends State<TestResultsEntryPage>
   Future<void> _loadData() async {
     setState(() => _loadingStudents = true);
     try {
-      final repo = context.read<ErpRepository>();
+      final repo = context.read<AcademicRepository>();
       final testId = widget.test['id'] as int;
 
       final results = await repo.getTestResults(testId);
@@ -118,7 +121,7 @@ class _TestResultsEntryPageState extends State<TestResultsEntryPage>
     try {
       final testId = widget.test['id'] as int;
       final res =
-          await context.read<ErpRepository>().recordBulkResults(testId, results);
+          await context.read<AcademicRepository>().recordBulkResults(testId, results);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -191,9 +194,9 @@ class _TestResultsEntryPageState extends State<TestResultsEntryPage>
     final maxScore = (test['max_score'] as num).toDouble();
 
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        backgroundColor: AppTheme.voidBlack,
+        backgroundColor: AppTheme.background,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -377,7 +380,7 @@ class _TestResultsEntryPageState extends State<TestResultsEntryPage>
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
       decoration: BoxDecoration(
-        color: AppTheme.voidBlack,
+        color: AppTheme.background,
         border: Border(top: BorderSide(color: Colors.white.withOpacity(0.07))),
       ),
       child: SizedBox(
@@ -607,3 +610,4 @@ class _TestResultsEntryPageState extends State<TestResultsEntryPage>
     );
   }
 }
+

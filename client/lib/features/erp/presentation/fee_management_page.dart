@@ -90,7 +90,7 @@ class _FeeManagementPageState extends State<FeeManagementPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text("FEE MANAGEMENT")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),

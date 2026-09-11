@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../data/dashboard_repository.dart';
-import '../data/dashboard_models.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
 
@@ -84,7 +83,7 @@ class _CreateFeePageState extends State<CreateFeePage> {
     final grades = _students.map((s) => s.grade).toSet().toList();
 
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text("CREATE NEW FEE")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),

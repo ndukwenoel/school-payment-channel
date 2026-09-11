@@ -35,7 +35,7 @@ class _LinkStudentPageState extends State<LinkStudentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text("LINK STUDENT")),
       body: Padding(
         padding: const EdgeInsets.all(24.0),

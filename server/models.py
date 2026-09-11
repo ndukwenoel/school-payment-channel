@@ -26,6 +26,7 @@ class School(Base):
     name = Column(String, unique=True, index=True)
     address = Column(String)
     contact_email = Column(String)
+    contact_phone = Column(String, nullable=True)
     logo_url = Column(String, nullable=True)
     allowed_installment_options = Column(String, default="2,3,4")
     
@@ -33,6 +34,13 @@ class School(Base):
     enable_late_fees = Column(Boolean, default=False)
     late_fee_percentage = Column(Float, default=0.0)
     late_fee_grace_period_days = Column(Integer, default=0)
+    
+    # Platform & Subscription Settings
+    status = Column(String, default="active") # active, suspended
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    subscription_plan = Column(String, nullable=True)
+    subscription_due_date = Column(DateTime, nullable=True)
+    modules_enabled = Column(String, default='["academics", "finance", "hr", "parent_portal"]')
     
     users = relationship("User", back_populates="school")
     students = relationship("Student", back_populates="school")
@@ -543,3 +551,25 @@ class UnmatchedPayment(Base):
     school = relationship("School")
     classroom = relationship("ClassRoom")
     resolved_by = relationship("User")
+
+class PlatformInvoice(Base):
+    __tablename__ = "platform_invoices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False)
+    amount_due = Column(Float, nullable=False)
+    status = Column(String, default="unpaid") # unpaid, paid
+    billing_period = Column(String) # e.g. 'August 2026'
+    due_date = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    school = relationship("School")
+
+class SystemSettings(Base):
+    __tablename__ = "system_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    paystack_public_key = Column(String, nullable=True)
+    paystack_secret_key = Column(String, nullable=True)
+    platform_fee_percentage = Column(Float, default=1.5)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

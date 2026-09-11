@@ -10,7 +10,7 @@ class PaymentHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.voidBlack,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text("PAYMENT HISTORY")),
       body: FutureBuilder<List<PaymentAttempt>>(
         future: context.read<PaymentRepository>().getPaymentHistory(),
