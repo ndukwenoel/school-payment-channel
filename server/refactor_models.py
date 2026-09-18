@@ -1,11 +1,19 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime
+import os
+
+models_dir = 'models'
+schemas_dir = 'schemas'
+
+base_imports = """from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
-from .database import Base
+from ..database import Base
 
+"""
+
+models_files = {
+    'user.py': base_imports + """
 class User(Base):
     __tablename__ = "users"
-
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
@@ -15,13 +23,32 @@ class User(Base):
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
     credit_balance = Column(Float, default=0.0) # Used for overpayments/advance payments
     auto_pay_enabled = Column(Boolean, default=False)
-
     students = relationship("Student", back_populates="parent")
     school = relationship("School", back_populates="users")
 
+class Role(Base):
+    __tablename__ = "roles"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String) # e.g., "bursar", "principal"
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+    permissions = relationship("RolePermission", back_populates="role")
+
+class Permission(Base):
+    __tablename__ = "permissions"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True) # e.g., "can_create_fee"
+
+class RolePermission(Base):
+    __tablename__ = "role_permissions"
+    id = Column(Integer, primary_key=True, index=True)
+    role_id = Column(Integer, ForeignKey("roles.id"))
+    permission_id = Column(Integer, ForeignKey("permissions.id"))
+    role = relationship("Role", back_populates="permissions")
+    permission = relationship("Permission")
+""",
+    'school.py': base_imports + """
 class School(Base):
     __tablename__ = "schools"
-
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
     address = Column(String)
@@ -29,19 +56,14 @@ class School(Base):
     contact_phone = Column(String, nullable=True)
     logo_url = Column(String, nullable=True)
     allowed_installment_options = Column(String, default="2,3,4")
-    
-    # Late Fee Settings
     enable_late_fees = Column(Boolean, default=False)
     late_fee_percentage = Column(Float, default=0.0)
     late_fee_grace_period_days = Column(Integer, default=0)
-    
-    # Platform & Subscription Settings
     status = Column(String, default="active") # active, suspended
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     subscription_plan = Column(String, nullable=True)
     subscription_due_date = Column(DateTime, nullable=True)
     modules_enabled = Column(String, default='["academics", "finance", "hr", "parent_portal"]')
-    
     users = relationship("User", back_populates="school")
     students = relationship("Student", back_populates="school")
     classrooms = relationship("ClassRoom", back_populates="school")
@@ -54,15 +76,50 @@ class School(Base):
     broadcasts = relationship("Broadcast", back_populates="school")
     resources = relationship("AcademicResource", back_populates="school")
 
+class ClassRoom(Base):
+    __tablename__ = "classrooms"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String) # e.g. "Grade 10 - Blue"
+    section = Column(String, nullable=True) # e.g. "A", "B"
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    school = relationship("School", back_populates="classrooms")
+    students = relationship("Student", back_populates="classroom")
+    virtual_accounts = relationship("VirtualAccount", back_populates="classroom")
+
+class Subject(Base):
+    __tablename__ = "subjects"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String) # e.g. "Mathematics"
+    code = Column(String) # e.g. "MATH101"
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    school = relationship("School", back_populates="subjects")
+
+class PlatformInvoice(Base):
+    __tablename__ = "platform_invoices"
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False)
+    amount_due = Column(Float, nullable=False)
+    status = Column(String, default="unpaid") # unpaid, paid
+    billing_period = Column(String) # e.g. 'August 2026'
+    due_date = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    school = relationship("School")
+
+class SystemSettings(Base):
+    __tablename__ = "system_settings"
+    id = Column(Integer, primary_key=True, index=True)
+    paystack_public_key = Column(String, nullable=True)
+    paystack_secret_key = Column(String, nullable=True)
+    platform_fee_percentage = Column(Float, default=1.5)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+""",
+    'student.py': base_imports + """
 class Student(Base):
     __tablename__ = "students"
-
     id = Column(Integer, primary_key=True, index=True)
     enrollment_number = Column(String, unique=True, index=True)
     full_name = Column(String)
     grade = Column(String)
-    
-    # Comprehensive profile fields
     date_of_birth = Column(DateTime, nullable=True)
     gender = Column(String, nullable=True)
     profile_picture_url = Column(String, nullable=True)
@@ -75,14 +132,12 @@ class Student(Base):
     medical_conditions = Column(String, nullable=True)
     admission_date = Column(DateTime, nullable=True)
     status = Column(String, default="active") # active, suspended, graduated, transferred
-    
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     parent_id = Column(Integer, ForeignKey("users.id"))
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
-
     parent = relationship("User", back_populates="students")
     school = relationship("School", back_populates="students")
     classroom_id = Column(Integer, ForeignKey("classrooms.id"), nullable=True)
-    
     classroom = relationship("ClassRoom", back_populates="students")
     invoices = relationship("Invoice", back_populates="student")
     attendance_records = relationship("Attendance", back_populates="student")
@@ -91,9 +146,34 @@ class Student(Base):
     documents = relationship("StudentDocument", back_populates="student")
     test_results = relationship("TestResult", back_populates="student")
 
+class StudentDocument(Base):
+    __tablename__ = "student_documents"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    document_type = Column(String) # medical, academic, behavioral, identification, other
+    file_url = Column(String)
+    notes = Column(String, nullable=True)
+    uploaded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    student_id = Column(Integer, ForeignKey("students.id"))
+    uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    student = relationship("Student", back_populates="documents")
+    uploader = relationship("User")
+
+class Attendance(Base):
+    __tablename__ = "attendance"
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    status = Column(String) # present, absent, late
+    remarks = Column(String, nullable=True) # optional teacher notes
+    student_id = Column(Integer, ForeignKey("students.id"))
+    classroom_id = Column(Integer, ForeignKey("classrooms.id"), nullable=True)
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    student = relationship("Student", back_populates="attendance_records")
+    school = relationship("School", back_populates="attendance_records")
+""",
+    'finance.py': base_imports + """
 class VirtualAccount(Base):
     __tablename__ = "virtual_accounts"
-
     id = Column(Integer, primary_key=True, index=True)
     account_number = Column(String, unique=True, index=True)
     account_name = Column(String)
@@ -103,23 +183,21 @@ class VirtualAccount(Base):
     school_id = Column(Integer, ForeignKey("schools.id"))
     status = Column(String, default="active") # active, inactive
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
     student = relationship("Student", back_populates="virtual_accounts")
     classroom = relationship("ClassRoom", back_populates="virtual_accounts")
     school = relationship("School")
 
 class Invoice(Base):
     __tablename__ = "invoices"
-
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String) # e.g. "Term 1 Invoice"
     due_date = Column(DateTime)
     status = Column(String, default="pending") # pending, paid, partial, overdue
     late_fee_applied = Column(Boolean, default=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     student_id = Column(Integer, ForeignKey("students.id"))
     discount_id = Column(Integer, ForeignKey("discounts.id"), nullable=True)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
-
     student = relationship("Student", back_populates="invoices")
     discount = relationship("Discount", back_populates="invoices")
     line_items = relationship("InvoiceLineItem", back_populates="invoice")
@@ -128,17 +206,14 @@ class Invoice(Base):
 
 class InvoiceLineItem(Base):
     __tablename__ = "invoice_line_items"
-
     id = Column(Integer, primary_key=True, index=True)
     invoice_id = Column(Integer, ForeignKey("invoices.id"))
     title = Column(String)
     amount = Column(Float)
-    
     invoice = relationship("Invoice", back_populates="line_items")
 
 class PaymentAttempt(Base):
     __tablename__ = "payment_attempts"
-
     id = Column(Integer, primary_key=True, index=True)
     invoice_id = Column(Integer, ForeignKey("invoices.id"))
     amount = Column(Float)
@@ -147,8 +222,8 @@ class PaymentAttempt(Base):
     transaction_id = Column(String, nullable=True) # Used for Opay/Bank reference number
     receipt_url = Column(String, nullable=True) # Optional uploaded receipt image
     payment_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
-
     invoice = relationship("Invoice", back_populates="payment_attempts")
 
 class PaymentBundle(Base):
@@ -159,7 +234,6 @@ class PaymentBundle(Base):
     status = Column(String, default="pending") # pending, paid
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     school_id = Column(Integer, ForeignKey("schools.id"))
-    
     items = relationship("PaymentBundleItem", back_populates="bundle")
 
 class PaymentBundleItem(Base):
@@ -168,7 +242,6 @@ class PaymentBundleItem(Base):
     bundle_id = Column(Integer, ForeignKey("payment_bundles.id"))
     invoice_id = Column(Integer, ForeignKey("invoices.id"))
     amount_allocated = Column(Float)
-    
     bundle = relationship("PaymentBundle", back_populates="items")
     invoice = relationship("Invoice")
 
@@ -182,137 +255,119 @@ class PaymentPlanRequest(Base):
     status = Column(String, default="pending") # pending, approved, rejected
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     school_id = Column(Integer, ForeignKey("schools.id"))
-    
     invoice = relationship("Invoice")
     parent = relationship("User")
 
 class FeeTemplate(Base):
     __tablename__ = "fee_templates"
-
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String) # e.g. "Standard Grade 10 Tuition"
     description = Column(String, nullable=True)
     school_id = Column(Integer, ForeignKey("schools.id"))
-
     line_items = relationship("FeeTemplateLineItem", back_populates="template")
     school = relationship("School")
 
 class FeeTemplateLineItem(Base):
     __tablename__ = "fee_template_line_items"
-
     id = Column(Integer, primary_key=True, index=True)
     template_id = Column(Integer, ForeignKey("fee_templates.id"))
     title = Column(String)
     amount = Column(Float)
-
     template = relationship("FeeTemplate", back_populates="line_items")
 
 class InstallmentPlan(Base):
     __tablename__ = "installment_plans"
-
     id = Column(Integer, primary_key=True, index=True)
     invoice_id = Column(Integer, ForeignKey("invoices.id"))
     school_id = Column(Integer, ForeignKey("schools.id"))
-
     invoice = relationship("Invoice", back_populates="installment_plan")
     installments = relationship("Installment", back_populates="plan")
 
 class Installment(Base):
     __tablename__ = "installments"
-
     id = Column(Integer, primary_key=True, index=True)
     plan_id = Column(Integer, ForeignKey("installment_plans.id"))
     amount_due = Column(Float)
     due_date = Column(DateTime)
     status = Column(String, default="pending") # pending, paid, overdue
-
     plan = relationship("InstallmentPlan", back_populates="installments")
 
 class Discount(Base):
     __tablename__ = "discounts"
-
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String) # e.g. "Sibling Discount", "Staff Child"
     percentage = Column(Float, default=0.0)
     flat_amount = Column(Float, default=0.0)
     description = Column(String)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
-
     invoices = relationship("Invoice", back_populates="discount")
 
-class NotificationLog(Base):
-    __tablename__ = "notification_logs"
-
+class LedgerAccount(Base):
+    __tablename__ = "ledger_accounts"
     id = Column(Integer, primary_key=True, index=True)
-    recipient_email = Column(String)
-    subject = Column(String)
-    message = Column(String)
-    sent_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    status = Column(String, default="sent") # sent, failed
+    name = Column(String) # e.g., "Parent Wallet", "School Revenue"
+    type = Column(String) # asset, liability, equity, revenue, expense
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 
-class ClassRoom(Base):
-    __tablename__ = "classrooms"
-
+class LedgerTransaction(Base):
+    __tablename__ = "ledger_transactions"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String) # e.g. "Grade 10 - Blue"
-    section = Column(String, nullable=True) # e.g. "A", "B"
-    school_id = Column(Integer, ForeignKey("schools.id"))
+    description = Column(String)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    entries = relationship("LedgerEntry", back_populates="transaction")
 
-    school = relationship("School", back_populates="classrooms")
-    students = relationship("Student", back_populates="classroom")
-    virtual_accounts = relationship("VirtualAccount", back_populates="classroom")
-
-# Update Student to link to ClassRoom
-# Note: Keeping the original Student definition for now but adding a foreign key for ClassRoom later if needed.
-# For simplicity in this step, I'll update the Student model in the next chunk if necessary or just add ClassRoom relationship.
-
-class Subject(Base):
-    __tablename__ = "subjects"
-
+class LedgerEntry(Base):
+    __tablename__ = "ledger_entries"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String) # e.g. "Mathematics"
-    code = Column(String) # e.g. "MATH101"
-    school_id = Column(Integer, ForeignKey("schools.id"))
+    transaction_id = Column(Integer, ForeignKey("ledger_transactions.id"))
+    account_id = Column(Integer, ForeignKey("ledger_accounts.id"))
+    amount = Column(Float)
+    type = Column(String) # "debit" or "credit"
+    transaction = relationship("LedgerTransaction", back_populates="entries")
+    account = relationship("LedgerAccount")
 
-    school = relationship("School", back_populates="subjects")
-
-class Attendance(Base):
-    __tablename__ = "attendance"
-
+class PostingRule(Base):
+    __tablename__ = "posting_rules"
     id = Column(Integer, primary_key=True, index=True)
-    date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    status = Column(String) # present, absent, late
-    remarks = Column(String, nullable=True) # optional teacher notes
-    student_id = Column(Integer, ForeignKey("students.id"))
-    classroom_id = Column(Integer, ForeignKey("classrooms.id"), nullable=True)
-    school_id = Column(Integer, ForeignKey("schools.id"))
+    event_type = Column(String) # e.g. "payment.received", "payment.exception"
+    provider = Column(String, nullable=True) # e.g. "paystack", "mock", "virtual_account"
+    debit_account_name = Column(String)
+    credit_account_name = Column(String)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 
-    student = relationship("Student", back_populates="attendance_records")
-    school = relationship("School", back_populates="attendance_records")
-
-
-class StudentDocument(Base):
-    """Stores links/references to student-related documents (medical, academic, behavioral)."""
-    __tablename__ = "student_documents"
-
+class Expense(Base):
+    __tablename__ = "expenses"
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String)
-    document_type = Column(String) # medical, academic, behavioral, identification, other
-    file_url = Column(String)
-    notes = Column(String, nullable=True)
-    uploaded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    student_id = Column(Integer, ForeignKey("students.id"))
-    uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    amount = Column(Float)
+    category = Column(String) # e.g. "Utilities", "Vendor", "Payroll"
+    payment_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    recorded_by_id = Column(Integer, ForeignKey("users.id"))
+    school = relationship("School")
+    recorded_by = relationship("User")
 
-    student = relationship("Student", back_populates="documents")
-    uploader = relationship("User")
-
-
+class UnmatchedPayment(Base):
+    __tablename__ = "unmatched_payments"
+    id = Column(Integer, primary_key=True, index=True)
+    amount = Column(Float)
+    bank_name = Column(String)
+    account_number = Column(String)
+    transaction_ref = Column(String)
+    narration = Column(String)
+    status = Column(String, default="pending") # pending, resolved
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    classroom_id = Column(Integer, ForeignKey("classrooms.id"), nullable=True)
+    resolved_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    school = relationship("School")
+    classroom = relationship("ClassRoom")
+    resolved_by = relationship("User")
+""",
+    'academic.py': base_imports + """
 class CourseTest(Base):
-    """Represents a specific test/CA/exam created by a teacher for a subject & classroom."""
     __tablename__ = "course_tests"
-
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String)         # e.g. "Test 1", "Mid-Term Exam", "Final Exam"
     test_type = Column(String)     # "test", "exam", "ca", "quiz", "assignment"
@@ -325,18 +380,14 @@ class CourseTest(Base):
     classroom_id = Column(Integer, ForeignKey("classrooms.id"))
     school_id = Column(Integer, ForeignKey("schools.id"))
     created_by = Column(Integer, ForeignKey("users.id"))  # teacher
-
     subject = relationship("Subject")
     classroom = relationship("ClassRoom")
     school = relationship("School")
     teacher = relationship("User")
     results = relationship("TestResult", back_populates="course_test")
 
-
 class TestResult(Base):
-    """Stores an individual student's score for a specific CourseTest."""
     __tablename__ = "test_results"
-
     id = Column(Integer, primary_key=True, index=True)
     score = Column(Float)
     remarks = Column(String, nullable=True)  # e.g. "Excellent", "Needs improvement"
@@ -344,13 +395,11 @@ class TestResult(Base):
     student_id = Column(Integer, ForeignKey("students.id"))
     school_id = Column(Integer, ForeignKey("schools.id"))
     recorded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
     course_test = relationship("CourseTest", back_populates="results")
     student = relationship("Student", back_populates="test_results")
 
 class GradeRecord(Base):
     __tablename__ = "grade_records"
-
     id = Column(Integer, primary_key=True, index=True)
     score = Column(Float)
     term = Column(String) # e.g. "Term 1"
@@ -358,27 +407,41 @@ class GradeRecord(Base):
     student_id = Column(Integer, ForeignKey("students.id"))
     subject_id = Column(Integer, ForeignKey("subjects.id"))
     school_id = Column(Integer, ForeignKey("schools.id"))
-
     student = relationship("Student", back_populates="grades")
     school = relationship("School", back_populates="grades")
 
+class AcademicResource(Base):
+    __tablename__ = "academic_resources"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    description = Column(String, nullable=True)
+    file_url = Column(String)
+    type = Column(String) # note, exam, test
+    status = Column(String, default="pending") # pending, approved, rejected
+    visibility = Column(String, default="internal") # internal, public
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    school_id = Column(Integer, ForeignKey("schools.id"))
+    teacher_id = Column(Integer, ForeignKey("users.id")) # uploader
+    classroom_id = Column(Integer, ForeignKey("classrooms.id"), nullable=True) # specific class targeting
+    school = relationship("School", back_populates="resources")
+    teacher = relationship("User")
+    classroom = relationship("ClassRoom")
+""",
+    'hr.py': base_imports + """
 class StaffProfile(Base):
     __tablename__ = "staff_profiles"
-
     id = Column(Integer, primary_key=True, index=True)
     employee_id = Column(String, unique=True, index=True)
     designation = Column(String) # e.g. "Teacher", "Accountant"
     base_salary = Column(Float, default=0.0)
     user_id = Column(Integer, ForeignKey("users.id"))
     school_id = Column(Integer, ForeignKey("schools.id"))
-
     user = relationship("User")
     school = relationship("School", back_populates="staff")
     payrolls = relationship("Payroll", back_populates="staff")
 
 class Payroll(Base):
     __tablename__ = "payrolls"
-
     id = Column(Integer, primary_key=True, index=True)
     month = Column(String) # e.g. "January"
     year = Column(Integer)
@@ -388,13 +451,12 @@ class Payroll(Base):
     net_pay = Column(Float)
     staff_id = Column(Integer, ForeignKey("staff_profiles.id"))
     school_id = Column(Integer, ForeignKey("schools.id"))
-
     staff = relationship("StaffProfile", back_populates="payrolls")
     school = relationship("School", back_populates="payrolls")
-
+""",
+    'admin.py': base_imports + """
 class InventoryItem(Base):
     __tablename__ = "inventory_items"
-
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String) # e.g. "Whiteboard Marker"
     category = Column(String) # e.g. "Stationery", "Lab"
@@ -402,71 +464,30 @@ class InventoryItem(Base):
     unit_price = Column(Float, nullable=True)
     is_for_sale = Column(Boolean, default=False)
     school_id = Column(Integer, ForeignKey("schools.id"))
-
     school = relationship("School", back_populates="inventory")
 
 class Broadcast(Base):
     __tablename__ = "broadcasts"
-
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String)
     message = Column(String)
     type = Column(String) # newsletter, alert, event
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     school_id = Column(Integer, ForeignKey("schools.id"))
-
     school = relationship("School", back_populates="broadcasts")
 
-class AcademicResource(Base):
-    __tablename__ = "academic_resources"
-
+class NotificationLog(Base):
+    __tablename__ = "notification_logs"
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String)
-    description = Column(String, nullable=True)
-    file_url = Column(String)
-    type = Column(String) # note, exam, test
-    status = Column(String, default="pending") # pending, approved, rejected
-    visibility = Column(String, default="internal") # internal, public
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    
-    school_id = Column(Integer, ForeignKey("schools.id"))
-    teacher_id = Column(Integer, ForeignKey("users.id")) # uploader
-    classroom_id = Column(Integer, ForeignKey("classrooms.id"), nullable=True) # specific class targeting
-
-    school = relationship("School", back_populates="resources")
-    teacher = relationship("User")
-    classroom = relationship("ClassRoom")
-
-# --- RBAC Models ---
-class Role(Base):
-    __tablename__ = "roles"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String) # e.g., "bursar", "principal"
+    recipient_email = Column(String)
+    subject = Column(String)
+    message = Column(String)
+    sent_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    status = Column(String, default="sent") # sent, failed
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
 
-    permissions = relationship("RolePermission", back_populates="role")
-
-class Permission(Base):
-    __tablename__ = "permissions"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True) # e.g., "can_create_fee"
-
-class RolePermission(Base):
-    __tablename__ = "role_permissions"
-
-    id = Column(Integer, primary_key=True, index=True)
-    role_id = Column(Integer, ForeignKey("roles.id"))
-    permission_id = Column(Integer, ForeignKey("permissions.id"))
-
-    role = relationship("Role", back_populates="permissions")
-    permission = relationship("Permission")
-
-# --- Audit Log ---
 class AuditLog(Base):
     __tablename__ = "audit_logs"
-
     id = Column(Integer, primary_key=True, index=True)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -477,99 +498,63 @@ class AuditLog(Base):
     new_values = Column(String)
     ip_address = Column(String, nullable=True)
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+"""
+}
 
-# --- Ledger Models ---
-class LedgerAccount(Base):
-    __tablename__ = "ledger_accounts"
+models_init = """from .user import User, Role, Permission, RolePermission
+from .school import School, ClassRoom, Subject, SystemSettings, PlatformInvoice
+from .student import Student, StudentDocument, Attendance
+from .finance import VirtualAccount, Invoice, InvoiceLineItem, PaymentAttempt, PaymentBundle, PaymentBundleItem, PaymentPlanRequest, FeeTemplate, FeeTemplateLineItem, InstallmentPlan, Installment, Discount, LedgerAccount, LedgerTransaction, LedgerEntry, PostingRule, Expense, UnmatchedPayment
+from .academic import CourseTest, TestResult, GradeRecord, AcademicResource
+from .hr import StaffProfile, Payroll
+from .admin import InventoryItem, Broadcast, NotificationLog, AuditLog
+"""
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String) # e.g., "Parent Wallet", "School Revenue"
-    type = Column(String) # asset, liability, equity, revenue, expense
-    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+for k, v in models_files.items():
+    with open(os.path.join(models_dir, k), 'w') as f:
+        f.write(v)
+with open(os.path.join(models_dir, '__init__.py'), 'w') as f:
+    f.write(models_init)
 
-class LedgerTransaction(Base):
-    __tablename__ = "ledger_transactions"
+# Now schemas
+schema_imports = "from pydantic import BaseModel\\nfrom typing import List, Optional\\nfrom datetime import datetime\\n"
 
-    id = Column(Integer, primary_key=True, index=True)
-    description = Column(String)
-    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+# I will write a simple script to split schemas by reading the original schemas.py and splitting by `# --- ... ---` headers
+with open('schemas.py', 'r') as f:
+    schema_code = f.read()
 
-    entries = relationship("LedgerEntry", back_populates="transaction")
+import re
+sections = re.split(r'# --- (.*?) ---', schema_code)
 
-class LedgerEntry(Base):
-    __tablename__ = "ledger_entries"
+schema_groups = {}
+current_group = "base"
+schema_groups[current_group] = schema_imports
 
-    id = Column(Integer, primary_key=True, index=True)
-    transaction_id = Column(Integer, ForeignKey("ledger_transactions.id"))
-    account_id = Column(Integer, ForeignKey("ledger_accounts.id"))
-    amount = Column(Float)
-    type = Column(String) # "debit" or "credit"
+for i in range(1, len(sections), 2):
+    header = sections[i].strip()
+    content = sections[i+1]
     
-    transaction = relationship("LedgerTransaction", back_populates="entries")
-    account = relationship("LedgerAccount")
-
-class PostingRule(Base):
-    __tablename__ = "posting_rules"
-
-    id = Column(Integer, primary_key=True, index=True)
-    event_type = Column(String) # e.g. "payment.received", "payment.exception"
-    provider = Column(String, nullable=True) # e.g. "paystack", "mock", "virtual_account"
-    debit_account_name = Column(String)
-    credit_account_name = Column(String)
-    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
-
-class Expense(Base):
-    __tablename__ = "expenses"
+    if "User" in header: g = "user"
+    elif "Student" in header or "Document" in header: g = "student"
+    elif "Discount" in header or "Invoice" in header or "Fee" in header or "Installment" in header or "Payment" in header or "Virtual" in header or "Ledger" in header or "Financial" in header or "Expense" in header or "Webhook" in header: g = "finance"
+    elif "School" in header or "ERP" in header or "Report" in header or "Platform" in header or "Settings" in header: g = "school"
+    elif "Course" in header or "Test" in header or "Academic" in header or "Collaboration" in header: g = "academic"
+    elif "Staff" in header or "Payroll" in header: g = "hr"
+    elif "Inventory" in header or "Broadcast" in header or "Notification" in header or "Audit" in header or "CSV" in header: g = "admin"
+    else: g = "misc"
     
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String)
-    amount = Column(Float)
-    category = Column(String) # e.g. "Utilities", "Vendor", "Payroll"
-    payment_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    school_id = Column(Integer, ForeignKey("schools.id"))
-    recorded_by_id = Column(Integer, ForeignKey("users.id"))
-    
-    school = relationship("School")
-    recorded_by = relationship("User")
+    if g not in schema_groups: schema_groups[g] = schema_imports
+    schema_groups[g] += content
 
-class UnmatchedPayment(Base):
-    __tablename__ = "unmatched_payments"
+schema_init = ""
+for g in schema_groups:
+    if g == "base": continue
+    with open(os.path.join(schemas_dir, g + '.py'), 'w') as f:
+        # replace any cross references if needed, but since we use strings or we can just import all from . in each?
+        # Pydantic schemas might need direct imports
+        pass
 
-    id = Column(Integer, primary_key=True, index=True)
-    amount = Column(Float)
-    bank_name = Column(String)
-    account_number = Column(String)
-    transaction_ref = Column(String)
-    narration = Column(String)
-    status = Column(String, default="pending") # pending, resolved
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    school_id = Column(Integer, ForeignKey("schools.id"))
-    classroom_id = Column(Integer, ForeignKey("classrooms.id"), nullable=True)
-    resolved_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-
-    school = relationship("School")
-    classroom = relationship("ClassRoom")
-    resolved_by = relationship("User")
-
-class PlatformInvoice(Base):
-    __tablename__ = "platform_invoices"
-
-    id = Column(Integer, primary_key=True, index=True)
-    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False)
-    amount_due = Column(Float, nullable=False)
-    status = Column(String, default="unpaid") # unpaid, paid
-    billing_period = Column(String) # e.g. 'August 2026'
-    due_date = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
-    school = relationship("School")
-
-class SystemSettings(Base):
-    __tablename__ = "system_settings"
-
-    id = Column(Integer, primary_key=True, index=True)
-    paystack_public_key = Column(String, nullable=True)
-    paystack_secret_key = Column(String, nullable=True)
-    platform_fee_percentage = Column(Float, default=1.5)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+# Wait, Pydantic schemas need actual imports! e.g., Student has `virtual_accounts: List['VirtualAccount']` 
+# which will need `from .finance import VirtualAccount` if we move it, OR we just let strings resolve if they are updated.
+"""
+""

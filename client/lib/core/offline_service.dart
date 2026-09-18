@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../features/erp/data/erp_repository.dart';
+import '../features/erp/data/repositories/academic_repository.dart';
+import '../features/erp/data/repositories/collaboration_repository.dart';
 
 class OfflineAction {
   final String type; // e.g., 'attendance', 'upload'
@@ -49,7 +50,7 @@ class OfflineService {
     return currentQueue.length;
   }
 
-  Future<void> syncPendingActions(ErpRepository repository) async {
+  Future<void> syncPendingActions(AcademicRepository academicRepo, CollaborationRepository collabRepo) async {
     final queue = await getQueue();
     if (queue.isEmpty) return;
 
@@ -59,10 +60,10 @@ class OfflineService {
       bool success = false;
       try {
         if (action.type == 'attendance') {
-           await repository.markAttendance(action.data);
+           await academicRepo.markAttendance(action.data);
            success = true;
         } else if (action.type == 'upload') {
-           await repository.uploadResource(action.data);
+           await collabRepo.uploadResource(action.data);
            success = true;
         }
       } catch (e) {

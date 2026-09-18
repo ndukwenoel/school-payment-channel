@@ -4,6 +4,7 @@ import '../data/repositories/academic_repository.dart';
 import '../data/repositories/hr_repository.dart';
 import '../data/repositories/inventory_repository.dart';
 import '../data/repositories/collaboration_repository.dart';
+import '../data/models/erp_models.dart';
 import '../../../core/theme.dart';
 
 /// Displays all students in a classroom for a specific [CourseTest]
@@ -22,7 +23,7 @@ class _TestResultsEntryPageState extends State<TestResultsEntryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  List<dynamic> _existingResults = [];
+  List<TestResult> _existingResults = [];
   final Map<int, TextEditingController> _scoreControllers = {};
   final Map<int, TextEditingController> _remarkControllers = {};
 
@@ -59,11 +60,11 @@ class _TestResultsEntryPageState extends State<TestResultsEntryPage>
 
           // Pre-fill controllers from existing results
           for (final r in results) {
-            final studentId = r['student_id'] as int;
+            final studentId = r.studentId;
             _scoreControllers[studentId] =
-                TextEditingController(text: r['score'].toString());
+                TextEditingController(text: r.score.toString());
             _remarkControllers[studentId] =
-                TextEditingController(text: r['remarks'] ?? '');
+                TextEditingController(text: r.remarks ?? '');
           }
         });
       }
@@ -440,12 +441,12 @@ class _TestResultsEntryPageState extends State<TestResultsEntryPage>
       );
     }
 
-    final sorted = List.from(_existingResults)
-      ..sort((a, b) => (b['score'] as num).compareTo(a['score'] as num));
+    final sorted = List<TestResult>.from(_existingResults)
+      ..sort((a, b) => b.score.compareTo(a.score));
 
-    final highest = (sorted.first['score'] as num).toDouble();
+    final highest = sorted.first.score;
     final avg =
-        sorted.map((r) => (r['score'] as num).toDouble()).reduce((a, b) => a + b) /
+        sorted.map((r) => r.score).reduce((a, b) => a + b) /
             sorted.length;
 
     return RefreshIndicator(
@@ -516,8 +517,8 @@ class _TestResultsEntryPageState extends State<TestResultsEntryPage>
     );
   }
 
-  Widget _buildResultRow(int rank, Map<String, dynamic> result, double maxScore) {
-    final score = (result['score'] as num).toDouble();
+  Widget _buildResultRow(int rank, TestResult result, double maxScore) {
+    final score = result.score;
     final pct = (score / maxScore).clamp(0.0, 1.0);
     final rankColors = [
       const Color(0xFFFFD700), // gold
@@ -557,7 +558,7 @@ class _TestResultsEntryPageState extends State<TestResultsEntryPage>
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Student #${result['student_id']}',
+                  'Student #${result.studentId}',
                   style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -593,12 +594,12 @@ class _TestResultsEntryPageState extends State<TestResultsEntryPage>
               ),
             ),
           ),
-          if (result['remarks'] != null &&
-              (result['remarks'] as String).isNotEmpty) ...[
+          if (result.remarks != null &&
+              result.remarks!.isNotEmpty) ...[
             const SizedBox(height: 6),
             Align(
               alignment: Alignment.centerLeft,
-              child: Text('"${result['remarks']}"',
+              child: Text('"${result.remarks}"',
                   style: const TextStyle(
                       color: AppTheme.textMuted50,
                       fontSize: 11,

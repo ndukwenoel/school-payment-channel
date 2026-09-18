@@ -140,9 +140,10 @@ def get_aging_report(
     now = datetime.now(timezone.utc)
     invoices = db.query(models.Invoice).filter(
         models.Invoice.school_id == current_user.school_id,
-        models.Invoice.status.in_(["pending", "partial", "overdue"]),
-        models.Invoice.due_date < now
+        models.Invoice.status.in_(["pending", "partial", "overdue"])
     ).all()
+    # Filter in Python to avoid SQLite datetime matching issues if needed, or just let it pass
+    invoices = [inv for inv in invoices if inv.due_date and inv.due_date.replace(tzinfo=timezone.utc) < now]
     
     buckets = {
         "0-30 days": {"total": 0.0, "ids": []},
@@ -154,7 +155,7 @@ def get_aging_report(
     total_overdue = 0.0
     
     for inv in invoices:
-        days_late = (now - inv.due_date).days
+        days_late = (now - inv.due_date.replace(tzinfo=timezone.utc)).days
         total_due = sum(item.amount for item in inv.line_items)
         total_paid = sum(p.amount for p in inv.payment_attempts if p.status == "success")
         outstanding = total_due - total_paid
@@ -667,9 +668,11 @@ def get_expenses(
     if not current_user.school_id:
         raise HTTPException(status_code=400, detail="User not assigned to a school")
         
-    return db.query(models.Expense).filter(
+    res = db.query(models.Expense).filter(
         models.Expense.school_id == current_user.school_id
     ).order_by(models.Expense.payment_date.desc()).all()
+    print(f"DEBUG: /expenses called by {current_user.email} (school {current_user.school_id}). Returning {len(res)} items.")
+    return res
 
 @router.get("/analytics/executive")
 def get_executive_analytics(

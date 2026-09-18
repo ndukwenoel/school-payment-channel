@@ -24,7 +24,10 @@ class _PlatformBillingScreenState extends State<PlatformBillingScreen> {
   Future<void> _fetchInvoices() async {
     setState(() => _isLoading = true);
     try {
-      final res = await _apiClient.dio.get('/platform-billing/');
+      final res = await _apiClient.dio.get(
+        '/platform-billing/',
+        queryParameters: {'skip': 0, 'limit': 100},
+      );
       if (mounted) {
         setState(() {
           _invoices = res.data;

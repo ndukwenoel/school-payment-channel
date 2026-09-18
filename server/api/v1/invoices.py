@@ -80,6 +80,8 @@ def create_bulk_invoices(
 @router.get("/student/{student_id}", response_model=List[schemas.Invoice])
 def get_student_invoices(
     student_id: int, 
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -95,7 +97,7 @@ def get_student_invoices(
     if current_user.role in ["admin", "school_admin"] and student.school_id != current_user.school_id:
         raise HTTPException(status_code=403, detail="Access denied to students in other schools")
 
-    invoices = db.query(models.Invoice).filter(models.Invoice.student_id == student_id).all()
+    invoices = db.query(models.Invoice).filter(models.Invoice.student_id == student_id).offset(skip).limit(limit).all()
     
     now = datetime.now(timezone.utc)
     updated = False

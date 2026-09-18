@@ -27,9 +27,12 @@ class PaymentRepository {
   }
 
   // Invoice Actions
-  Future<List<Invoice>> getStudentInvoices(int studentId) async {
+  Future<List<Invoice>> getStudentInvoices(int studentId, {int skip = 0, int limit = 100}) async {
     try {
-      final response = await _apiClient.dio.get('/invoices/student/$studentId');
+      final response = await _apiClient.dio.get(
+        '/invoices/student/$studentId',
+        queryParameters: {'skip': skip, 'limit': limit},
+      );
       return (response.data as List).map((e) => Invoice.fromJson(e)).toList();
     } catch (e) {
       throw e;

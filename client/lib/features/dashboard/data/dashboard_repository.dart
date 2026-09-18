@@ -215,8 +215,11 @@ class DashboardRepository {
     });
   }
 
-  Future<List<dynamic>> getStudentInvoices(int studentId) async {
-    final response = await _apiClient.dio.get('/invoices/student/$studentId');
+  Future<List<dynamic>> getStudentInvoices(int studentId, {int skip = 0, int limit = 100}) async {
+    final response = await _apiClient.dio.get(
+      '/invoices/student/$studentId',
+      queryParameters: {'skip': skip, 'limit': limit},
+    );
     return response.data;
   }
 

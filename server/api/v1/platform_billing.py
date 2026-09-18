@@ -13,10 +13,12 @@ router = APIRouter(
 
 @router.get("/", response_model=List[schemas.PlatformInvoice])
 def get_platform_invoices(
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(CheckRole(["super_admin"]))
 ):
-    return db.query(models.PlatformInvoice).order_by(models.PlatformInvoice.created_at.desc()).all()
+    return db.query(models.PlatformInvoice).order_by(models.PlatformInvoice.created_at.desc()).offset(skip).limit(limit).all()
 
 @router.post("/", response_model=schemas.PlatformInvoice)
 def create_platform_invoice(

@@ -74,8 +74,11 @@ class AcademicRepository {
   }
 
   // --- TestResult ---
-  Future<List<TestResult>> getTestResults(int testId) async {
-    final response = await apiClient.dio.get('/erp/academic/tests/$testId/results');
+  Future<List<TestResult>> getTestResults(int testId, {int skip = 0, int limit = 100}) async {
+    final response = await apiClient.dio.get(
+      '/erp/academic/tests/$testId/results',
+      queryParameters: {'skip': skip, 'limit': limit},
+    );
     return (response.data as List).map((e) => TestResult.fromJson(e)).toList();
   }
 
@@ -90,8 +93,11 @@ class AcademicRepository {
     return response.data;
   }
 
-  Future<List<TestResult>> getStudentTestResults(int studentId) async {
-    final response = await apiClient.dio.get('/erp/academic/students/$studentId/results');
+  Future<List<TestResult>> getStudentTestResults(int studentId, {int skip = 0, int limit = 100}) async {
+    final response = await apiClient.dio.get(
+      '/erp/academic/students/$studentId/results',
+      queryParameters: {'skip': skip, 'limit': limit},
+    );
     return (response.data as List).map((e) => TestResult.fromJson(e)).toList();
   }
 

@@ -92,43 +92,6 @@ class AcademicDashboardPage extends StatelessWidget {
           _buildAdminActionCard(context, "Manage Classes & Sections", "Create classes, assign form teachers.", Icons.holiday_village),
           SizedBox(height: 16),
           _buildAdminActionCard(context, "Subject Allocation", "Assign teachers to specific subjects.", Icons.menu_book),
-          SizedBox(height: 16),
-          _buildAdminActionCard(context, "Academic Calendar", "Manage terms, holidays, and sessions.", Icons.calendar_month),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdminActionCard(BuildContext context, String title, String subtitle, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: AppTheme.primaryBlue, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.textDark)),
-                SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: AppTheme.textMuted50, fontSize: 12)),
-              ],
-            ),
-          ),
-          const Icon(Icons.arrow_forward_ios, color: AppTheme.primaryBlue, size: 16),
         ],
       ),
     );
@@ -291,5 +254,50 @@ class AcademicDashboardPage extends StatelessWidget {
       ),
     );
   }
-}
 
+  Widget _buildAdminActionCard(BuildContext context, String title, String subtitle, IconData icon) {
+    return InkWell(
+      onTap: () {
+        if (title == "Manage Classes & Sections") {
+          context.push('/erp/classrooms');
+        } else if (title == "Subject Allocation") {
+          context.push('/erp/subjects');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Module in development')));
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceLight,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.blueVibrant.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: AppTheme.blueVibrant),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: const TextStyle(color: AppTheme.textMuted50, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}

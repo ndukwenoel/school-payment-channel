@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:convert';
 import '../../../../core/api_client.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/theme.dart';
@@ -33,6 +34,11 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     _fetchExceptions();
     _fetchOverviewData();
     _fetchAgingReport();
+    _fetchTransactions();
+    _fetchVerifications();
+    _fetchPlanRequests();
+    _fetchExpenses();
+    _fetchSchoolSettings();
   }
 
   Future<void> _fetchExceptions() async {
@@ -395,9 +401,6 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
 
   Widget _buildTransactionsTab() {
     if (_isLoadingTransactions) {
-      if (_transactions.isEmpty) {
-        _fetchTransactions();
-      }
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -455,7 +458,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
 
   Widget _buildExceptionsTab() {
     if (_isLoadingExceptions) {
-      return Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator());
     }
     
     if (_exceptions.isEmpty) {
@@ -677,9 +680,6 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
 
   Widget _buildVerificationsTab() {
     if (_isLoadingVerifications) {
-      if (_verifications.isEmpty) {
-        _fetchVerifications();
-      }
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -764,9 +764,6 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
 
   Widget _buildPlanRequestsTab() {
     if (_isLoadingPlanRequests) {
-      if (_planRequests.isEmpty) {
-        _fetchPlanRequests();
-      }
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -781,7 +778,8 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
         itemCount: _planRequests.length,
         itemBuilder: (context, index) {
           final req = _planRequests[index];
-          final installments = req['proposed_installments'] as List;
+          final String planStr = req['proposed_plan'] ?? '[]';
+          final installments = jsonDecode(planStr) as List;
           
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
@@ -995,7 +993,6 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
 
   Widget _buildExpensesTab() {
     if (_isLoadingExpenses) {
-      if (_expenses.isEmpty) _fetchExpenses();
       return const Center(child: CircularProgressIndicator());
     }
 

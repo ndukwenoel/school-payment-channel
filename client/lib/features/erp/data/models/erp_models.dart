@@ -51,18 +51,24 @@ class CourseTest {
 
 class TestResult {
   final int? id;
+  final int studentId;
   final double score;
+  final String? remarks;
 
-  TestResult({this.id, required this.score});
+  TestResult({this.id, required this.studentId, required this.score, this.remarks});
 
   factory TestResult.fromJson(Map<String, dynamic> json) => TestResult(
     id: json['id'],
+    studentId: json['student_id'] ?? 0,
     score: (json['score'] as num?)?.toDouble() ?? 0.0,
+    remarks: json['remarks'],
   );
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'student_id': studentId,
     'score': score,
+    'remarks': remarks,
   };
 }
 

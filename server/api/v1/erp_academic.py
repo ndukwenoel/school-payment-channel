@@ -346,6 +346,8 @@ def bulk_record_test_results(
 @router.get("/tests/{test_id}/results", response_model=List[schemas.TestResult], summary="Get all results for a test")
 def get_test_results(
     test_id: int,
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(CheckRole(["admin", "school_admin", "teacher"]))
 ):
@@ -357,12 +359,14 @@ def get_test_results(
 
     return db.query(models.TestResult).filter(
         models.TestResult.test_id == test_id
-    ).order_by(models.TestResult.score.desc()).all()
+    ).order_by(models.TestResult.score.desc()).offset(skip).limit(limit).all()
 
 
 @router.get("/students/{student_id}/results", response_model=List[schemas.TestResult], summary="Get all test results for a student")
 def get_student_test_results(
     student_id: int,
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(CheckRole(["admin", "school_admin", "teacher", "parent"]))
 ):
@@ -376,7 +380,7 @@ def get_student_test_results(
 
     return db.query(models.TestResult).filter(
         models.TestResult.student_id == student_id
-    ).order_by(models.TestResult.recorded_at.desc()).all()
+    ).order_by(models.TestResult.recorded_at.desc()).offset(skip).limit(limit).all()
 
 
 # =============================================================================

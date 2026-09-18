@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
 import '../../../core/offline_service.dart';
 import '../../erp/data/repositories/academic_repository.dart';
+import '../../erp/data/repositories/collaboration_repository.dart';
 import '../../auth/presentation/auth_bloc.dart';
 
 class TeacherDashboard extends StatefulWidget {
@@ -31,7 +32,10 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   void _syncNow() async {
     setState(() => _syncing = true);
     try {
-      await context.read<OfflineService>().syncPendingActions(context.read<AcademicRepository>());
+      await context.read<OfflineService>().syncPendingActions(
+        context.read<AcademicRepository>(),
+        context.read<CollaborationRepository>(),
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Sync complete!")));
         _refreshQueue();
