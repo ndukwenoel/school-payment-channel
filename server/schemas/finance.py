@@ -54,6 +54,11 @@ class Invoice(InvoiceBase):
     status: str
     late_fee_applied: bool = False
     line_items: List[InvoiceLineItem] = []
+    total_amount: Optional[float] = 0.0
+    student_name: Optional[str] = None
+    enrollment_number: Optional[str] = None
+    student_grade: Optional[str] = None
+    classroom_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -142,6 +147,21 @@ class PaymentAttempt(PaymentAttemptBase):
 
     class Config:
         from_attributes = True
+
+class OfflinePaymentCreate(BaseModel):
+    amount: float
+    payment_method: str = "cash"
+    reference: Optional[str] = None
+    notes: Optional[str] = None
+
+class InvoiceDetail(Invoice):
+    amount_paid: Optional[float] = 0.0
+    amount_outstanding: Optional[float] = 0.0
+    student_grade: Optional[str] = None
+    parent_name: Optional[str] = None
+    parent_email: Optional[str] = None
+    parent_phone: Optional[str] = None
+    payment_attempts: List[PaymentAttempt] = []
 
 
 class PaymentBundleCreate(BaseModel):

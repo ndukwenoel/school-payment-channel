@@ -67,8 +67,8 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryBlue,
           foregroundColor: white,
-          minimumSize: const Size(double.infinity, 56),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: _textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
           elevation: 0,
         ),

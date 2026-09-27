@@ -34,6 +34,14 @@ class Invoice {
   final double totalAmount;
   @JsonKey(name: 'line_items', defaultValue: [])
   final List<InvoiceLineItem> lineItems;
+  @JsonKey(name: 'student_name')
+  final String? studentName;
+  @JsonKey(name: 'enrollment_number')
+  final String? enrollmentNumber;
+  @JsonKey(name: 'student_grade')
+  final String? studentGrade;
+  @JsonKey(name: 'classroom_name')
+  final String? classroomName;
 
   Invoice({
     required this.id,
@@ -43,6 +51,10 @@ class Invoice {
     required this.studentId,
     required this.totalAmount,
     required this.lineItems,
+    this.studentName,
+    this.enrollmentNumber,
+    this.studentGrade,
+    this.classroomName,
   });
 
   factory Invoice.fromJson(Map<String, dynamic> json) => _$InvoiceFromJson(json);

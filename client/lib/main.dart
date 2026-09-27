@@ -61,6 +61,21 @@ import 'features/dashboard/screens/parent_dashboard_screen.dart';
 import 'features/dashboard/main_layout.dart';
 
 void main() {
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      color: Colors.red,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'RENDER ERROR:\n${details.exceptionAsString()}',
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  };
   runApp(const MyApp());
 }
 

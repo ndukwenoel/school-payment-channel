@@ -76,7 +76,7 @@ class _DashboardPageState extends State<DashboardPage> {
         }
         
         final stats = snapshot.data ?? {
-           'total_students': 0, 'total_revenue': 0.0, 'outstanding_fees': 0.0
+           'total_students': 0, 'total_revenue': 0.0, 'outstanding_fees': 0.0, 'outstanding_invoices': 0.0
         };
         
         return SingleChildScrollView(
@@ -390,27 +390,33 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildHeroStats(Map<String, dynamic> stats) {
+    final revenue = (stats['total_revenue'] as num?)?.toDouble() ?? 0.0;
+    final outstanding = ((stats['outstanding_fees'] ?? stats['outstanding_invoices']) as num?)?.toDouble() ?? 0.0;
+    final students = stats['total_students'] ?? 0;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: AppTheme.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
       ),
       child: Column(
         children: [
           Row(
             children: [
-              _buildStatItem("STUDENTS", "${stats['total_students']}", AppTheme.blueVibrant),
-              SizedBox(width: 40),
-              _buildStatItem("REVENUE", "₦${stats['total_revenue']}", AppTheme.limeLight),
+              _buildStatItem("STUDENTS", "$students", AppTheme.primaryBlue),
+              const SizedBox(width: 40),
+              _buildStatItem("REVENUE", "₦${revenue.toStringAsFixed(2)}", AppTheme.success),
             ],
           ),
-          SizedBox(height: 24),
-          Divider(color: AppTheme.textMuted10),
-          SizedBox(height: 24),
-          _buildStatItem("OUTSTANDING", "₦${stats['outstanding_fees']}", AppTheme.bluePale, large: true),
+          const SizedBox(height: 24),
+          const Divider(height: 1),
+          const SizedBox(height: 24),
+          _buildStatItem("OUTSTANDING", "₦${outstanding.toStringAsFixed(2)}", Colors.redAccent, large: true),
         ],
       ),
     );
@@ -420,8 +426,8 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: AppTheme.textMuted50, fontSize: 10, letterSpacing: 1)),
-        SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+        const SizedBox(height: 6),
         Text(val, style: TextStyle(fontSize: large ? 32 : 24, fontWeight: FontWeight.bold, color: color)),
       ],
     );

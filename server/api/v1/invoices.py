@@ -12,6 +12,64 @@ router = APIRouter(
     tags=["Invoices"]
 )
 
+@router.get("/", response_model=List[schemas.Invoice])
+def list_invoices(
+    status: str = None,
+    grade: str = None,
+    classroom_id: int = None,
+    search: str = None,
+    skip: int = 0,
+    limit: int = 500,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin", "super_admin"]))
+):
+    query = db.query(models.Invoice)
+    
+    if current_user.role != "super_admin":
+        if not current_user.school_id:
+            raise HTTPException(status_code=400, detail="User not assigned to a school")
+        query = query.filter(models.Invoice.school_id == current_user.school_id)
+        
+    if status and status.lower() != "all":
+        query = query.filter(models.Invoice.status == status.lower())
+        
+    has_grade = grade and grade.lower() not in ["all", "all classes"]
+    needs_student_join = bool(search or has_grade or classroom_id)
+    if needs_student_join:
+        query = query.join(models.Student)
+        if has_grade:
+            query = query.outerjoin(models.ClassRoom).filter(
+                (models.Student.grade == grade) |
+                (models.ClassRoom.name == grade)
+            )
+        if classroom_id:
+            query = query.filter(models.Student.classroom_id == classroom_id)
+        if search:
+            search_filter = f"%{search}%"
+            query = query.filter(
+                (models.Invoice.title.ilike(search_filter)) |
+                (models.Student.full_name.ilike(search_filter)) |
+                (models.Student.enrollment_number.ilike(search_filter))
+            )
+        
+    invoices = query.order_by(models.Invoice.due_date.desc()).offset(skip).limit(limit).all()
+    
+    now = datetime.now(timezone.utc)
+    for inv in invoices:
+        due_date = inv.due_date.replace(tzinfo=timezone.utc) if inv.due_date.tzinfo is None else inv.due_date
+        if inv.status in ["pending", "partial"] and now > due_date:
+            inv.status = "overdue"
+            
+        inv.total_amount = sum(item.amount for item in inv.line_items)
+        if inv.student:
+            inv.student_name = inv.student.full_name
+            inv.enrollment_number = inv.student.enrollment_number
+            inv.student_grade = inv.student.grade
+            if inv.student.classroom:
+                inv.classroom_name = inv.student.classroom.name
+            
+    return invoices
+
 @router.post("/", response_model=schemas.Invoice)
 def create_invoice(
     invoice_data: schemas.InvoiceCreate, 
@@ -356,3 +414,186 @@ def pay_invoice_with_balance(
         
     db.commit()
     return {"status": "success", "message": "Invoice paid successfully", "new_balance": current_user.credit_balance}
+
+@router.get("/{invoice_id}", response_model=schemas.InvoiceDetail)
+def get_invoice_detail(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    invoice = db.query(models.Invoice).filter(models.Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    if current_user.role == "parent":
+        if not invoice.student or invoice.student.parent_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+    elif current_user.role != "super_admin":
+        if not current_user.school_id or invoice.school_id != current_user.school_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+    total_amount = sum(item.amount for item in invoice.line_items)
+    successful_payments = [p for p in invoice.payment_attempts if p.status == "success"]
+    amount_paid = sum(p.amount for p in successful_payments)
+
+    now = datetime.now(timezone.utc)
+    due_date = invoice.due_date.replace(tzinfo=timezone.utc) if invoice.due_date.tzinfo is None else invoice.due_date
+
+    if invoice.status != "voided":
+        if amount_paid >= total_amount and total_amount > 0:
+            invoice.status = "paid"
+        elif amount_paid > 0:
+            invoice.status = "partial"
+        elif now > due_date:
+            invoice.status = "overdue"
+
+    invoice.total_amount = total_amount
+    invoice.amount_paid = amount_paid
+    invoice.amount_outstanding = max(0.0, total_amount - amount_paid)
+
+    if invoice.student:
+        invoice.student_name = invoice.student.full_name
+        invoice.enrollment_number = invoice.student.enrollment_number
+        invoice.student_grade = invoice.student.grade
+        if invoice.student.parent:
+            invoice.parent_name = invoice.student.parent.full_name
+            invoice.parent_email = invoice.student.parent.email
+        invoice.parent_phone = invoice.student.emergency_contact_phone
+
+    return invoice
+
+@router.post("/{invoice_id}/record-offline-payment", response_model=schemas.InvoiceDetail)
+def record_offline_payment(
+    invoice_id: int,
+    payment_data: schemas.OfflinePaymentCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin", "super_admin"]))
+):
+    invoice = db.query(models.Invoice).filter(models.Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    if current_user.role != "super_admin" and invoice.school_id != current_user.school_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if invoice.status == "paid":
+        raise HTTPException(status_code=400, detail="Invoice is already fully paid")
+
+    if invoice.status == "voided":
+        raise HTTPException(status_code=400, detail="Cannot record payment against a voided invoice")
+
+    if payment_data.amount <= 0:
+        raise HTTPException(status_code=400, detail="Payment amount must be greater than zero")
+
+    total_amount = sum(item.amount for item in invoice.line_items)
+    current_paid = sum(p.amount for p in invoice.payment_attempts if p.status == "success")
+    outstanding = max(0.0, total_amount - current_paid)
+
+    if payment_data.amount > outstanding + 0.01:
+        raise HTTPException(status_code=400, detail=f"Amount exceeds outstanding balance of ₦{outstanding:.2f}")
+
+    ref = payment_data.reference or f"BURSAR-{payment_data.payment_method.upper()}-{int(datetime.now().timestamp())}"
+
+    attempt = models.PaymentAttempt(
+        invoice_id=invoice.id,
+        amount=payment_data.amount,
+        provider=payment_data.payment_method,
+        status="success",
+        transaction_id=ref,
+        school_id=invoice.school_id
+    )
+    db.add(attempt)
+
+    new_paid = current_paid + payment_data.amount
+    if new_paid >= total_amount - 0.01:
+        invoice.status = "paid"
+    else:
+        invoice.status = "partial"
+
+    from ...core.ledger import record_event_transaction
+    if invoice.school_id:
+        record_event_transaction(
+            db=db,
+            school_id=invoice.school_id,
+            description=f"Bursar {payment_data.payment_method.upper()} payment for Invoice #{invoice.id} ({ref})",
+            event_type="payment.offline_recorded",
+            provider=payment_data.payment_method,
+            amount=payment_data.amount,
+            fallback_debit="School Cash / Bank",
+            fallback_credit="School Revenue"
+        )
+
+    db.commit()
+    db.refresh(invoice)
+
+    invoice.total_amount = total_amount
+    invoice.amount_paid = new_paid
+    invoice.amount_outstanding = max(0.0, total_amount - new_paid)
+
+    if invoice.student:
+        invoice.student_name = invoice.student.full_name
+        invoice.enrollment_number = invoice.student.enrollment_number
+        invoice.student_grade = invoice.student.grade
+        if invoice.student.parent:
+            invoice.parent_name = invoice.student.parent.full_name
+            invoice.parent_email = invoice.student.parent.email
+        invoice.parent_phone = invoice.student.emergency_contact_phone
+
+    return invoice
+
+@router.post("/{invoice_id}/send-reminder")
+def send_invoice_reminder(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin", "super_admin"]))
+):
+    invoice = db.query(models.Invoice).filter(models.Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    if current_user.role != "super_admin" and invoice.school_id != current_user.school_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    recipient_email = None
+    if invoice.student and invoice.student.parent:
+        recipient_email = invoice.student.parent.email
+
+    if not recipient_email:
+        raise HTTPException(status_code=400, detail="Parent email not found for this student")
+
+    total_amount = sum(item.amount for item in invoice.line_items)
+    paid = sum(p.amount for p in invoice.payment_attempts if p.status == "success")
+    outstanding = max(0.0, total_amount - paid)
+
+    new_log = models.NotificationLog(
+        recipient_email=recipient_email,
+        subject=f"Fee Reminder: {invoice.title} (INV-{invoice.id})",
+        message=f"Dear Parent, this is an automated reminder regarding the outstanding balance of ₦{outstanding:,.2f} for {invoice.student.full_name}. Due Date: {invoice.due_date.strftime('%Y-%m-%d')}.",
+        status="sent",
+        school_id=invoice.school_id
+    )
+    db.add(new_log)
+    db.commit()
+
+    return {"status": "success", "message": f"Payment reminder logged and dispatched to {recipient_email}"}
+
+@router.post("/{invoice_id}/void")
+def void_invoice(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(CheckRole(["admin", "school_admin", "finance_admin", "super_admin"]))
+):
+    invoice = db.query(models.Invoice).filter(models.Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    if current_user.role != "super_admin" and invoice.school_id != current_user.school_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if invoice.status == "paid":
+        raise HTTPException(status_code=400, detail="Cannot void a fully paid invoice")
+
+    invoice.status = "voided"
+    db.commit()
+
+    return {"status": "success", "message": f"Invoice INV-{invoice.id} marked as voided"}

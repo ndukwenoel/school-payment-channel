@@ -52,6 +52,7 @@ class DashboardStats(BaseModel):
     total_students: int
     total_revenue: float
     outstanding_invoices: float
+    outstanding_fees: Optional[float] = None
     total_invoices_created: float
 
 

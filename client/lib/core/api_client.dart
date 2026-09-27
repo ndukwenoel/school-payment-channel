@@ -15,8 +15,8 @@ class ApiClient {
       : _dio = Dio(BaseOptions(
           // Issue 16: Dynamic base URL for Emulator/Web/Local
           baseUrl: _getBaseUrl(),
-          connectTimeout: const Duration(milliseconds: 5000),
-          receiveTimeout: const Duration(milliseconds: 3000),
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
         )) {
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {

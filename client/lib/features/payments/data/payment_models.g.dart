@@ -33,6 +33,10 @@ Invoice _$InvoiceFromJson(Map<String, dynamic> json) => Invoice(
               ?.map((e) => InvoiceLineItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      studentName: json['student_name'] as String?,
+      enrollmentNumber: json['enrollment_number'] as String?,
+      studentGrade: json['student_grade'] as String?,
+      classroomName: json['classroom_name'] as String?,
     );
 
 Map<String, dynamic> _$InvoiceToJson(Invoice instance) => <String, dynamic>{
@@ -43,6 +47,10 @@ Map<String, dynamic> _$InvoiceToJson(Invoice instance) => <String, dynamic>{
       'student_id': instance.studentId,
       'total_amount': instance.totalAmount,
       'line_items': instance.lineItems,
+      'student_name': instance.studentName,
+      'enrollment_number': instance.enrollmentNumber,
+      'student_grade': instance.studentGrade,
+      'classroom_name': instance.classroomName,
     };
 
 PaymentAttempt _$PaymentAttemptFromJson(Map<String, dynamic> json) =>

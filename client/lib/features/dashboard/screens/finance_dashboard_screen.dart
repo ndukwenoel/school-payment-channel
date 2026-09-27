@@ -45,13 +45,18 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     setState(() => _isLoadingExceptions = true);
     try {
       final response = await _apiClient.dio.get('/api/v1/finance/exceptions');
-      setState(() {
-        _exceptions = response.data;
-      });
+      if (mounted) {
+        setState(() {
+          _exceptions = response.data is List ? response.data : [];
+        });
+      }
     } on DioException catch (e) {
       _showError('Failed to load exceptions', e);
+    } catch (e, stack) {
+      debugPrint('[FINANCE] UNEXPECTED ERROR: $e');
+      debugPrint('[FINANCE] STACK: $stack');
     } finally {
-      setState(() => _isLoadingExceptions = false);
+      if (mounted) setState(() => _isLoadingExceptions = false);
     }
   }
 
@@ -68,6 +73,9 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       });
     } on DioException catch (e) {
       _showError('Failed to load overview data', e);
+    } catch (e, stack) {
+      debugPrint('[FINANCE] UNEXPECTED ERROR: $e');
+      debugPrint('[FINANCE] STACK: $stack');
     } finally {
       setState(() => _isLoadingOverview = false);
     }
@@ -82,6 +90,9 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       });
     } on DioException catch (e) {
       _showError('Failed to load aging report', e);
+    } catch (e, stack) {
+      debugPrint('[FINANCE] UNEXPECTED ERROR: $e');
+      debugPrint('[FINANCE] STACK: $stack');
     } finally {
       setState(() => _isLoadingAging = false);
     }
@@ -394,6 +405,9 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       }
     } on DioException catch (e) {
       _showError('Failed to load transactions', e);
+    } catch (e, stack) {
+      debugPrint('[FINANCE] UNEXPECTED ERROR: $e');
+      debugPrint('[FINANCE] STACK: $stack');
     } finally {
       if (mounted) setState(() => _isLoadingTransactions = false);
     }
@@ -460,32 +474,65 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     if (_isLoadingExceptions) {
       return const Center(child: CircularProgressIndicator());
     }
-    
-    if (_exceptions.isEmpty) {
-      return Center(child: Text('No reconciliation exceptions found.'));
-    }
 
     return RefreshIndicator(
       onRefresh: _fetchExceptions,
-      child: ListView.builder(
+      child: ListView(
         padding: const EdgeInsets.all(16),
-        itemCount: _exceptions.length,
-        itemBuilder: (context, index) {
-          final exc = _exceptions[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 36),
-              title: Text(exc['description'], style: const TextStyle(fontWeight: FontWeight.w500)),
-              subtitle: Text('Unreconciled Amount: ₦${exc['amount']}'),
-              trailing: ElevatedButton(
-                onPressed: () => _showResolveDialog(exc['id'], exc['description']),
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.blueVibrant, foregroundColor: AppTheme.textDark),
-                child: const Text('Resolve'),
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              const Text("RECONCILIATION EXCEPTIONS", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_exceptions.length} Unresolved',
+                  style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
               ),
-            ),
-          );
-        },
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_exceptions.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Text('No reconciliation exceptions found.', style: TextStyle(color: AppTheme.textDark)),
+              ),
+            )
+          else
+            ..._exceptions.map((exc) {
+              if (exc == null || exc is! Map) return const SizedBox.shrink();
+              final String desc = exc['description']?.toString() ?? 'Unknown';
+              final int id = exc['id'] is int ? exc['id'] : int.tryParse(exc['id']?.toString() ?? '0') ?? 0;
+              final amount = exc['amount'] ?? 0;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 36),
+                  title: Text(desc, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('Unreconciled Amount: ₦$amount'),
+                  trailing: ElevatedButton(
+                    onPressed: () => _showResolveDialog(id, desc),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.blueVibrant,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      minimumSize: const Size(80, 36),
+                    ),
+                    child: const Text('Resolve'),
+                  ),
+                ),
+              );
+            }).toList(),
+        ],
       ),
     );
   }
@@ -603,7 +650,7 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
     final List buckets = _agingReport?['buckets'] ?? [];
 
     if (totalOverdue == 0) {
-      return Center(child: Text("No overdue invoices. Great job!"));
+      return const Center(child: Text("No overdue invoices. Great job!", style: TextStyle(color: AppTheme.textDark)));
     }
 
     return RefreshIndicator(
@@ -611,8 +658,9 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               const Text("AGING DEBT SUMMARY", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
               ElevatedButton.icon(
@@ -623,20 +671,24 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
               )
             ],
           ),
-          SizedBox(height: 16),
-          _buildMetricCard("Total Overdue", "₦${totalOverdue.toStringAsFixed(2)}", Colors.redAccent),
-          SizedBox(height: 24),
+          const SizedBox(height: 16),
+          _buildMetricCard("Total Overdue", "₦${(totalOverdue as num).toDouble().toStringAsFixed(2)}", Colors.redAccent),
+          const SizedBox(height: 24),
           const Text("DEBT BY AGE BUCKET", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
-          SizedBox(height: 12),
-          ...buckets.map((b) => Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: const Icon(Icons.hourglass_bottom, color: Colors.redAccent),
-              title: Text(b['bucket'], style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text("${b['invoice_ids'].length} invoices affected"),
-              trailing: Text("₦${b['total_amount'].toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, color: Colors.redAccent, fontWeight: FontWeight.bold)),
-            ),
-          )).toList(),
+          const SizedBox(height: 12),
+          ...buckets.map((b) {
+            if (b == null || b is! Map) return const SizedBox.shrink();
+            final num totalAmount = b['total_amount'] is num ? b['total_amount'] : 0;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                leading: const Icon(Icons.hourglass_bottom, color: Colors.redAccent),
+                title: Text(b['bucket']?.toString() ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text("${(b['invoice_ids'] as List?)?.length ?? 0} invoices affected"),
+                trailing: Text("₦${totalAmount.toDouble().toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              ),
+            );
+          }).toList(),
         ],
       ),
     );
@@ -653,11 +705,14 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       final response = await _apiClient.dio.get('/api/v1/finance/pending-verifications');
       if (mounted) {
         setState(() {
-          _verifications = response.data;
+          _verifications = response.data is List ? response.data : [];
         });
       }
     } on DioException catch (e) {
       _showError('Failed to load verifications', e);
+    } catch (e, stack) {
+      debugPrint('[FINANCE] UNEXPECTED ERROR: $e');
+      debugPrint('[FINANCE] STACK: $stack');
     } finally {
       if (mounted) setState(() => _isLoadingVerifications = false);
     }
@@ -683,46 +738,79 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_verifications.isEmpty) {
-      return const Center(child: Text('No pending verifications.'));
-    }
-
     return RefreshIndicator(
       onRefresh: _fetchVerifications,
-      child: ListView.builder(
+      child: ListView(
         padding: const EdgeInsets.all(16),
-        itemCount: _verifications.length,
-        itemBuilder: (context, index) {
-          final verification = _verifications[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: const Icon(Icons.receipt_long, color: AppTheme.blueVibrant, size: 36),
-              title: Text('Ref: ${verification['transaction_id']}', style: const TextStyle(fontWeight: FontWeight.w500)),
-              subtitle: Text('Amount: ₦${verification['amount']} \nDate: ${verification['payment_date']}'),
-              isThreeLine: true,
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (verification['receipt_url'] != null)
-                    IconButton(
-                      icon: const Icon(Icons.image),
-                      onPressed: () {
-                        // In a real app we'd open the image URL
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Mock Receipt Viewer Opened")));
-                      },
-                      tooltip: 'View Receipt',
-                    ),
-                  ElevatedButton(
-                    onPressed: () => _verifyPayment(verification['id']),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.greenDeep, foregroundColor: Colors.white),
-                    child: const Text('Approve'),
-                  ),
-                ],
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              const Text("MANUAL PAYMENT VERIFICATIONS", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryBlue.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_verifications.length} Pending',
+                  style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
               ),
-            ),
-          );
-        },
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_verifications.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Text('No pending verifications.', style: TextStyle(color: AppTheme.textDark)),
+              ),
+            )
+          else
+            ..._verifications.map((verification) {
+              if (verification == null || verification is! Map) return const SizedBox.shrink();
+              final int id = verification['id'] is int ? verification['id'] : int.tryParse(verification['id']?.toString() ?? '0') ?? 0;
+              final ref = verification['transaction_id']?.toString() ?? 'Unknown';
+              final amount = verification['amount'] ?? 0;
+              final date = verification['payment_date']?.toString().split('T')[0] ?? 'Unknown';
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: const Icon(Icons.receipt_long, color: AppTheme.blueVibrant, size: 36),
+                  title: Text('Ref: $ref', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('Amount: ₦$amount • Date: $date'),
+                  trailing: Wrap(
+                    spacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (verification['receipt_url'] != null)
+                        IconButton(
+                          icon: const Icon(Icons.image, color: AppTheme.primaryBlue),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Mock Receipt Viewer Opened")));
+                          },
+                          tooltip: 'View Receipt',
+                        ),
+                      ElevatedButton(
+                        onPressed: () => _verifyPayment(id),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.success,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          minimumSize: const Size(80, 36),
+                        ),
+                        child: const Text('Approve'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+        ],
       ),
     );
   }
@@ -738,11 +826,14 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       final response = await _apiClient.dio.get('/api/v1/invoices/plan-requests/all');
       if (mounted) {
         setState(() {
-          _planRequests = response.data;
+          _planRequests = response.data is List ? response.data : [];
         });
       }
     } on DioException catch (e) {
       _showError('Failed to load plan requests', e);
+    } catch (e, stack) {
+      debugPrint('[FINANCE] UNEXPECTED ERROR: $e');
+      debugPrint('[FINANCE] STACK: $stack');
     } finally {
       if (mounted) setState(() => _isLoadingPlanRequests = false);
     }
@@ -767,68 +858,113 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_planRequests.isEmpty) {
-      return const Center(child: Text('No pending plan requests.'));
-    }
-
     return RefreshIndicator(
       onRefresh: _fetchPlanRequests,
-      child: ListView.builder(
+      child: ListView(
         padding: const EdgeInsets.all(16),
-        itemCount: _planRequests.length,
-        itemBuilder: (context, index) {
-          final req = _planRequests[index];
-          final String planStr = req['proposed_plan'] ?? '[]';
-          final installments = jsonDecode(planStr) as List;
-          
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              const Text("PAYMENT PLAN REQUESTS", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_planRequests.length} Pending',
+                  style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_planRequests.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Text('No pending plan requests.', style: TextStyle(color: AppTheme.textDark)),
+              ),
+            )
+          else
+            ..._planRequests.map((req) {
+              if (req == null || req is! Map) return const SizedBox.shrink();
+
+              List installments = [];
+              if (req['proposed_plan'] is List) {
+                installments = req['proposed_plan'] as List;
+              } else if (req['proposed_plan'] is String) {
+                try {
+                  installments = jsonDecode(req['proposed_plan']) as List;
+                } catch (e) {
+                  installments = [];
+                }
+              }
+
+              final int id = req['id'] is int ? req['id'] : int.tryParse(req['id']?.toString() ?? '0') ?? 0;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Invoice #${req['invoice_id']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: Colors.orange.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
-                        child: Text(req['status'].toUpperCase(), style: const TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Invoice #${req['invoice_id']?.toString() ?? 'Unknown'}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.orange.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                            child: Text((req['status']?.toString() ?? '').toUpperCase(), style: const TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Reason: ${req['reason']?.toString() ?? ''}', style: const TextStyle(color: AppTheme.textMuted)),
+                      const SizedBox(height: 12),
+                      const Text('Proposed Installments:', style: TextStyle(fontWeight: FontWeight.w500)),
+                      ...installments.map((i) {
+                        if (i is! Map) return const SizedBox.shrink();
+                        final amount = i['amount'] ?? 0;
+                        final date = i['due_date']?.toString().split('T')[0] ?? 'Unknown';
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text('• ₦$amount due $date'),
+                        );
+                      }),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: 8,
+                        children: [
+                          TextButton(
+                            onPressed: () => _handlePlanRequest(id, 'reject'),
+                            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                            child: const Text('Reject'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => _handlePlanRequest(id, 'approve'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.success,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              minimumSize: const Size(80, 36),
+                            ),
+                            child: const Text('Approve'),
+                          ),
+                        ],
                       )
                     ],
                   ),
-                  SizedBox(height: 8),
-                  Text('Reason: ${req['reason']}', style: const TextStyle(color: AppTheme.textMuted)),
-                  SizedBox(height: 12),
-                  const Text('Proposed Installments:', style: TextStyle(fontWeight: FontWeight.w500)),
-                  ...installments.map((i) => Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text('• ₦${i['amount']} due ${i['due_date'].toString().split('T')[0]}'),
-                  )),
-                  SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => _handlePlanRequest(req['id'], 'reject'),
-                        style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-                        child: const Text('Reject'),
-                      ),
-                      SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () => _handlePlanRequest(req['id'], 'approve'),
-                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.greenDeep, foregroundColor: Colors.white),
-                        child: const Text('Approve'),
-                      ),
-                    ],
-                  )
-                ],
-              ),
-            ),
-          );
-        },
+                ),
+              );
+            }).toList(),
+        ],
       ),
     );
   }
@@ -848,6 +984,9 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       }
     } on DioException catch (e) {
       _showError('Failed to load expenses', e);
+    } catch (e, stack) {
+      debugPrint('[FINANCE] UNEXPECTED ERROR: $e');
+      debugPrint('[FINANCE] STACK: $stack');
     } finally {
       if (mounted) setState(() => _isLoadingExpenses = false);
     }
@@ -1001,11 +1140,13 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               const Text("EXPENSES & PAYROLL", style: TextStyle(color: AppTheme.textMuted, fontSize: 12, letterSpacing: 1.5)),
-              Row(
+              Wrap(
+                spacing: 8,
                 children: [
                   ElevatedButton.icon(
                     onPressed: _showExecutePayrollDialog,
@@ -1013,7 +1154,6 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
                     label: const Text("Execute Payroll"),
                     style: ElevatedButton.styleFrom(backgroundColor: AppTheme.purpleDeep, foregroundColor: Colors.white),
                   ),
-                  const SizedBox(width: 8),
                   ElevatedButton.icon(
                     onPressed: _showAddExpenseDialog,
                     icon: const Icon(Icons.add, size: 16),
@@ -1028,21 +1168,29 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
           if (_expenses.isEmpty)
             const Center(child: Padding(
               padding: EdgeInsets.all(32.0),
-              child: Text('No expenses logged yet.'),
+              child: Text('No expenses logged yet.', style: TextStyle(color: AppTheme.textDark)),
             ))
           else
-            ..._expenses.map((e) => Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: e['category'] == 'Payroll' ? AppTheme.purpleDeep.withOpacity(0.2) : AppTheme.orangeAccent.withOpacity(0.2),
-                  child: Icon(e['category'] == 'Payroll' ? Icons.group : Icons.receipt, color: e['category'] == 'Payroll' ? AppTheme.purpleDeep : AppTheme.orangeAccent),
+            ..._expenses.map((e) {
+              if (e == null || e is! Map) return const SizedBox.shrink();
+              final category = e['category']?.toString() ?? 'Unknown';
+              final title = e['title']?.toString() ?? 'Unknown';
+              final date = e['payment_date']?.toString().split('T')[0] ?? 'Unknown';
+              final amount = e['amount'] ?? 0;
+              
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: category == 'Payroll' ? AppTheme.purpleDeep.withOpacity(0.2) : AppTheme.orangeAccent.withOpacity(0.2),
+                    child: Icon(category == 'Payroll' ? Icons.group : Icons.receipt, color: category == 'Payroll' ? AppTheme.purpleDeep : AppTheme.orangeAccent),
+                  ),
+                  title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text('$category • $date'),
+                  trailing: Text('₦$amount', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.redAccent)),
                 ),
-                title: Text(e['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('${e['category']} • ${e['payment_date'].toString().split('T')[0]}'),
-                trailing: Text('₦${e['amount']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.redAccent)),
-              ),
-            )),
+              );
+            }).toList(),
         ],
       ),
     );
@@ -1064,6 +1212,9 @@ class _FinanceDashboardScreenState extends State<FinanceDashboardScreen> {
       }
     } on DioException catch (e) {
       _showError('Failed to load settings', e);
+    } catch (e, stack) {
+      debugPrint('[FINANCE] UNEXPECTED ERROR: $e');
+      debugPrint('[FINANCE] STACK: $stack');
     } finally {
       if (mounted) setState(() => _isLoadingSettings = false);
     }

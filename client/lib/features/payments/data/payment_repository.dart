@@ -27,6 +27,24 @@ class PaymentRepository {
   }
 
   // Invoice Actions
+  Future<List<Invoice>> getInvoices({String? status, String? grade, String? search, int skip = 0, int limit = 500}) async {
+    try {
+      final response = await _apiClient.dio.get(
+        '/invoices/',
+        queryParameters: {
+          if (status != null && status.isNotEmpty) 'status': status,
+          if (grade != null && grade.isNotEmpty && grade != 'All Classes') 'grade': grade,
+          if (search != null && search.isNotEmpty) 'search': search,
+          'skip': skip,
+          'limit': limit,
+        },
+      );
+      return (response.data as List).map((e) => Invoice.fromJson(e)).toList();
+    } catch (e) {
+      throw e;
+    }
+  }
+
   Future<List<Invoice>> getStudentInvoices(int studentId, {int skip = 0, int limit = 100}) async {
     try {
       final response = await _apiClient.dio.get(
@@ -34,6 +52,54 @@ class PaymentRepository {
         queryParameters: {'skip': skip, 'limit': limit},
       );
       return (response.data as List).map((e) => Invoice.fromJson(e)).toList();
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Future<Map<String, dynamic>> getInvoiceDetails(int invoiceId) async {
+    try {
+      final response = await _apiClient.dio.get('/invoices/$invoiceId');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Future<Map<String, dynamic>> recordOfflinePayment({
+    required int invoiceId,
+    required double amount,
+    required String paymentMethod,
+    String? reference,
+    String? notes,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post(
+        '/invoices/$invoiceId/record-offline-payment',
+        data: {
+          'amount': amount,
+          'payment_method': paymentMethod,
+          if (reference != null && reference.isNotEmpty) 'reference': reference,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+        },
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Future<void> sendInvoiceReminder(int invoiceId) async {
+    try {
+      await _apiClient.dio.post('/invoices/$invoiceId/send-reminder');
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Future<void> voidInvoice(int invoiceId) async {
+    try {
+      await _apiClient.dio.post('/invoices/$invoiceId/void');
     } catch (e) {
       throw e;
     }

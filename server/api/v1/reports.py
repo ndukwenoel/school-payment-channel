@@ -148,5 +148,6 @@ def get_dashboard_summary(
         "total_students": total_students,
         "total_revenue": total_revenue,
         "outstanding_invoices": outstanding_fees,
+        "outstanding_fees": outstanding_fees,
         "total_invoices_created": total_fees_created
     }
